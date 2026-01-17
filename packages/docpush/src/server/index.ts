@@ -5,6 +5,8 @@ import passport from 'passport';
 import { type DocsConfig, loadConfig, validateEnv } from '../core/config';
 import { setupAuth } from './auth';
 import authRoutes from './routes/auth';
+import docsRoutes from './routes/docs';
+import draftsRoutes from './routes/drafts';
 
 // Extend Express Request
 declare global {
@@ -66,6 +68,8 @@ export async function createServer(): Promise<express.Application> {
 
   // Routes
   app.use('/api/auth', authRoutes);
+  app.use('/api/drafts', draftsRoutes);
+  app.use('/api/docs', docsRoutes);
 
   // Health check
   app.get('/api/health', (req, res) => {
