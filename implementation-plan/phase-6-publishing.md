@@ -40,12 +40,7 @@
   "bin": {
     "docpush": "./dist/cli/index.js"
   },
-  "files": [
-    "dist",
-    "templates",
-    "README.md",
-    "LICENSE"
-  ],
+  "files": ["dist", "templates", "README.md", "LICENSE"],
   "scripts": {
     "dev:server": "tsx src/server/index.ts",
     "dev:web": "cd src/web && next dev",
@@ -61,7 +56,6 @@
     "@octokit/rest": "^20.0.2",
     "axios": "^1.6.2",
     "bcrypt": "^5.1.1",
-    "better-sqlite3": "^9.2.2",
     "cors": "^2.8.5",
     "express": "^4.18.2",
     "express-session": "^1.17.3",
@@ -72,7 +66,6 @@
     "passport-custom": "^1.1.1",
     "passport-github2": "^0.1.12",
     "passport-google-oauth20": "^2.0.0",
-    "pg": "^8.11.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "resend": "^3.0.0",
@@ -80,7 +73,6 @@
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
-    "@types/better-sqlite3": "^7.6.8",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/express-session": "^1.17.10",
@@ -89,7 +81,6 @@
     "@types/passport": "^1.0.16",
     "@types/passport-github2": "^1.2.9",
     "@types/passport-google-oauth20": "^2.0.14",
-    "@types/pg": "^8.10.9",
     "@types/react": "^18.2.46",
     "@types/react-dom": "^18.2.18",
     "eslint": "^8.56.0",
@@ -128,15 +119,8 @@
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true
   },
-  "include": [
-    "src/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "src/web",
-    "**/*.test.ts"
-  ]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "src/web", "**/*.test.ts"]
 }
 ```
 
@@ -215,8 +199,8 @@ chmod +x packages/docpush/scripts/build.sh
 ```javascript
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
-  distDir: '.next',
+  output: "standalone",
+  distDir: ".next",
   // Disable image optimization for standalone builds
   images: {
     unoptimized: true,
@@ -235,32 +219,32 @@ module.exports = nextConfig;
 ```typescript
 #!/usr/bin/env node
 
-import { Command } from 'commander';
-import { initCommand } from './commands/init';
-import { startCommand } from './commands/start';
-import { buildCommand } from './commands/build';
+import { Command } from "commander";
+import { initCommand } from "./commands/init";
+import { startCommand } from "./commands/start";
+import { buildCommand } from "./commands/build";
 
 const program = new Command();
 
 program
-  .name('docpush')
-  .description('Self-hosted documentation platform')
-  .version(require('../../package.json').version);
+  .name("docpush")
+  .description("Self-hosted documentation platform")
+  .version(require("../../package.json").version);
 
 program
-  .command('init')
-  .description('Initialize DocPush in the current directory')
+  .command("init")
+  .description("Initialize DocPush in the current directory")
   .action(initCommand);
 
 program
-  .command('start')
-  .description('Start the development server')
-  .option('-p, --port <port>', 'Port to run on', '3000')
+  .command("start")
+  .description("Start the development server")
+  .option("-p, --port <port>", "Port to run on", "3000")
   .action(startCommand);
 
 program
-  .command('build')
-  .description('Build for production')
+  .command("build")
+  .description("Build for production")
   .action(buildCommand);
 
 program.parse();
@@ -269,31 +253,31 @@ program.parse();
 **Create packages/docpush/src/cli/commands/start.ts:**
 
 ```typescript
-import { spawn } from 'child_process';
-import path from 'path';
+import { spawn } from "child_process";
+import path from "path";
 
 export async function startCommand(options: { port: string }) {
-  console.log('🚀 Starting DocPush...\n');
+  console.log("🚀 Starting DocPush...\n");
 
   const port = parseInt(options.port);
 
   // Start Express server
-  const serverPath = path.join(__dirname, '../../server/index.js');
-  const server = spawn('node', [serverPath], {
+  const serverPath = path.join(__dirname, "../../server/index.js");
+  const server = spawn("node", [serverPath], {
     env: {
       ...process.env,
       PORT: port.toString(),
-      NODE_ENV: 'development',
+      NODE_ENV: "development",
     },
-    stdio: 'inherit',
+    stdio: "inherit",
   });
 
-  server.on('error', (error) => {
-    console.error('❌ Failed to start server:', error);
+  server.on("error", (error) => {
+    console.error("❌ Failed to start server:", error);
     process.exit(1);
   });
 
-  process.on('SIGINT', () => {
+  process.on("SIGINT", () => {
     server.kill();
     process.exit(0);
   });
@@ -303,21 +287,21 @@ export async function startCommand(options: { port: string }) {
 **Create packages/docpush/src/cli/commands/build.ts:**
 
 ```typescript
-import { execSync } from 'child_process';
+import { execSync } from "child_process";
 
 export async function buildCommand() {
-  console.log('📦 Building DocPush for production...\n');
+  console.log("📦 Building DocPush for production...\n");
 
   try {
-    execSync('npm run build', {
-      stdio: 'inherit',
+    execSync("npm run build", {
+      stdio: "inherit",
       cwd: process.cwd(),
     });
 
-    console.log('\n✅ Build complete!');
-    console.log('   Run with: npm start');
+    console.log("\n✅ Build complete!");
+    console.log("   Run with: npm start");
   } catch (error) {
-    console.error('❌ Build failed');
+    console.error("❌ Build failed");
     process.exit(1);
   }
 }
@@ -333,18 +317,18 @@ export async function buildCommand() {
 module.exports = {
   // GitHub repository configuration
   github: {
-    owner: 'your-org',       // TODO: Change to your GitHub org/username
-    repo: 'your-repo',       // TODO: Change to your repository name
-    branch: 'main',
-    docsPath: 'docs',        // Path where docs are stored in repo
+    owner: "your-org", // TODO: Change to your GitHub org/username
+    repo: "your-repo", // TODO: Change to your repository name
+    branch: "main",
+    docsPath: "docs", // Path where docs are stored in repo
   },
 
   // Authentication mode
   auth: {
-    mode: 'public',          // Options: 'public' | 'domain-restricted' | 'oauth'
+    mode: "public", // Options: 'public' | 'domain-restricted' | 'oauth'
 
     // If mode is 'public':
-    adminPassword: 'changeme',  // TODO: Change this password!
+    adminPassword: "changeme", // TODO: Change this password!
 
     // If mode is 'domain-restricted':
     // allowedDomains: ['company.com'],
@@ -358,13 +342,13 @@ module.exports = {
   // Admin users (for domain-restricted and oauth modes)
   admins: {
     emails: [
-      'admin@example.com',   // TODO: Add admin emails
+      "admin@example.com", // TODO: Add admin emails
     ],
   },
 
   // Optional: Custom branding
   branding: {
-    name: 'Documentation',
+    name: "Documentation",
     // logo: '/logo.png',
   },
 };
@@ -377,9 +361,6 @@ module.exports = {
 GITHUB_TOKEN=ghp_your_token_here
 APP_URL=http://localhost:3000
 SESSION_SECRET=generate-random-string-here
-
-# Database (optional - uses SQLite if not provided)
-# DATABASE_URL=postgresql://user:pass@localhost:5432/docpush
 
 # Auth - Domain Restricted (only if using this mode)
 # RESEND_API_KEY=re_your_key_here
@@ -536,7 +517,7 @@ npx changeset publish
 
 **Create packages/docpush/README.md:**
 
-```markdown
+````markdown
 # DocPush
 
 Self-hosted, Git-backed collaborative documentation platform.
@@ -567,12 +548,14 @@ npx docpush init
 # Start development server
 npm run docs:dev
 ```
+````
 
 ## Configuration
 
 ### 1. GitHub Setup
 
 Create a personal access token:
+
 1. Go to GitHub Settings → Developer settings → Personal access tokens
 2. Generate new token with `repo` scope
 3. Add to `.env` as `GITHUB_TOKEN`
@@ -580,25 +563,27 @@ Create a personal access token:
 ### 2. Choose Authentication Mode
 
 **Option A: Public Mode** (simplest)
+
 ```javascript
 // docs.config.js
 module.exports = {
   auth: {
-    mode: 'public',
-    adminPassword: 'your-secure-password',
+    mode: "public",
+    adminPassword: "your-secure-password",
   },
   // ...
 };
 ```
 
 **Option B: Domain-Restricted**
+
 ```javascript
 // docs.config.js
 module.exports = {
   auth: {
-    mode: 'domain-restricted',
-    allowedDomains: ['company.com'],
-    emailFrom: 'noreply@company.com',
+    mode: "domain-restricted",
+    allowedDomains: ["company.com"],
+    emailFrom: "noreply@company.com",
   },
   // ...
 };
@@ -607,18 +592,20 @@ module.exports = {
 Requires: `RESEND_API_KEY` in `.env`
 
 **Option C: OAuth**
+
 ```javascript
 // docs.config.js
 module.exports = {
   auth: {
-    mode: 'oauth',
-    providers: ['github', 'google'],
+    mode: "oauth",
+    providers: ["github", "google"],
   },
   // ...
 };
 ```
 
 Requires OAuth credentials in `.env`:
+
 - `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`
 
@@ -668,7 +655,8 @@ MIT
 
 - [Documentation](https://github.com/yourusername/docpush)
 - [Issues](https://github.com/yourusername/docpush/issues)
-```
+
+````
 
 ---
 
@@ -714,7 +702,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-```
+````
 
 ---
 
@@ -814,11 +802,13 @@ Before publishing v1.0.0:
 After publishing to npm:
 
 1. **Announce**:
+
    - Create GitHub release
    - Share on Twitter, Reddit r/selfhosted
    - Post on Hacker News
 
 2. **Monitor**:
+
    - Watch GitHub issues
    - Check npm download stats
    - Respond to community feedback
@@ -845,6 +835,7 @@ Track these after launch:
 You now have a complete, publishable npm package! 🎉
 
 Users can install with:
+
 ```bash
 npm install docpush
 ```

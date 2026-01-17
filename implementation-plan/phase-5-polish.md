@@ -767,9 +767,6 @@ const envSchema = z.object({
     .string()
     .min(16, "SESSION_SECRET must be at least 16 characters"),
 
-  // Database (optional - uses SQLite if not provided)
-  DATABASE_URL: z.string().optional(),
-
   // Auth - Domain Restricted
   RESEND_API_KEY: z.string().optional(),
 

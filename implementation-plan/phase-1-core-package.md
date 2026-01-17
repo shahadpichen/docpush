@@ -36,6 +36,7 @@ pnpm init
 ```
 
 **Structure:**
+
 ```
 docpush/
 ├── packages/
@@ -62,13 +63,12 @@ docpush/
 ```
 
 **Root package.json:**
+
 ```json
 {
   "name": "docpush-monorepo",
   "private": true,
-  "workspaces": [
-    "packages/*"
-  ],
+  "workspaces": ["packages/*"],
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev"
@@ -81,9 +81,10 @@ docpush/
 ```
 
 **pnpm-workspace.yaml:**
+
 ```yaml
 packages:
-  - 'packages/*'
+  - "packages/*"
 ```
 
 ---
@@ -93,9 +94,9 @@ packages:
 **packages/docpush/src/cli/init.ts:**
 
 ```typescript
-import fs from 'fs-extra';
-import path from 'path';
-import chalk from 'chalk';
+import fs from "fs-extra";
+import path from "path";
+import chalk from "chalk";
 
 const WELCOME_TEMPLATE = `# Welcome to Your Documentation
 
@@ -148,9 +149,6 @@ GITHUB_TOKEN=ghp_your_token_here
 APP_URL=http://localhost:3000
 SESSION_SECRET=random-secret-change-in-production
 
-# Database (PostgreSQL recommended, SQLite as fallback)
-# DATABASE_URL=postgresql://user:password@localhost:5432/docpush
-
 # Auth - Domain Restricted (if using)
 # RESEND_API_KEY=re_your_key_here
 
@@ -168,43 +166,43 @@ SESSION_SECRET=random-secret-change-in-production
 `;
 
 export async function initCommand() {
-  console.log(chalk.blue('🚀 Initializing DocPush...\n'));
+  console.log(chalk.blue("🚀 Initializing DocPush...\n"));
 
   // 1. Create docs folder
-  await fs.ensureDir('./docs');
-  await fs.writeFile('./docs/welcome.md', WELCOME_TEMPLATE);
-  console.log(chalk.green('✓'), 'Created docs/ folder');
+  await fs.ensureDir("./docs");
+  await fs.writeFile("./docs/welcome.md", WELCOME_TEMPLATE);
+  console.log(chalk.green("✓"), "Created docs/ folder");
 
   // 2. Create config file
-  if (!await fs.pathExists('./docs.config.js')) {
-    await fs.writeFile('./docs.config.js', CONFIG_TEMPLATE);
-    console.log(chalk.green('✓'), 'Created docs.config.js');
+  if (!(await fs.pathExists("./docs.config.js"))) {
+    await fs.writeFile("./docs.config.js", CONFIG_TEMPLATE);
+    console.log(chalk.green("✓"), "Created docs.config.js");
   } else {
-    console.log(chalk.yellow('⚠'), 'docs.config.js already exists, skipping');
+    console.log(chalk.yellow("⚠"), "docs.config.js already exists, skipping");
   }
 
   // 3. Create .env.example
-  await fs.writeFile('./.env.example', ENV_TEMPLATE);
-  console.log(chalk.green('✓'), 'Created .env.example');
+  await fs.writeFile("./.env.example", ENV_TEMPLATE);
+  console.log(chalk.green("✓"), "Created .env.example");
 
   // 4. Update package.json scripts
-  const pkgPath = './package.json';
+  const pkgPath = "./package.json";
   if (await fs.pathExists(pkgPath)) {
     const pkg = await fs.readJson(pkgPath);
     pkg.scripts = {
       ...pkg.scripts,
-      'docs:dev': 'docpush start',
-      'docs:build': 'docpush build'
+      "docs:dev": "docpush start",
+      "docs:build": "docpush build",
     };
     await fs.writeJson(pkgPath, pkg, { spaces: 2 });
-    console.log(chalk.green('✓'), 'Updated package.json scripts');
+    console.log(chalk.green("✓"), "Updated package.json scripts");
   }
 
-  console.log(chalk.blue('\n📝 Next steps:'));
-  console.log('  1. Copy .env.example to .env');
-  console.log('  2. Edit docs.config.js with your GitHub repo');
-  console.log('  3. Add GITHUB_TOKEN to .env');
-  console.log('  4. Run: npm run docs:dev\n');
+  console.log(chalk.blue("\n📝 Next steps:"));
+  console.log("  1. Copy .env.example to .env");
+  console.log("  2. Edit docs.config.js with your GitHub repo");
+  console.log("  3. Add GITHUB_TOKEN to .env");
+  console.log("  4. Run: npm run docs:dev\n");
 }
 ```
 
@@ -212,26 +210,26 @@ export async function initCommand() {
 
 ```typescript
 #!/usr/bin/env node
-import { Command } from 'commander';
-import { initCommand } from './init';
-import { startCommand } from './start';
+import { Command } from "commander";
+import { initCommand } from "./init";
+import { startCommand } from "./start";
 
 const program = new Command();
 
 program
-  .name('docpush')
-  .description('Git-backed documentation platform')
-  .version('1.0.0');
+  .name("docpush")
+  .description("Git-backed documentation platform")
+  .version("1.0.0");
 
 program
-  .command('init')
-  .description('Initialize DocPush in current project')
+  .command("init")
+  .description("Initialize DocPush in current project")
   .action(initCommand);
 
 program
-  .command('start')
-  .description('Start DocPush server')
-  .option('-p, --port <port>', 'Port to run on', '3000')
+  .command("start")
+  .description("Start DocPush server")
+  .option("-p, --port <port>", "Port to run on", "3000")
   .action(startCommand);
 
 program.parse();
@@ -244,59 +242,73 @@ program.parse();
 **packages/docpush/src/core/config/schema.ts:**
 
 ```typescript
-import { z } from 'zod';
+import { z } from "zod";
 
 export const configSchema = z.object({
   // GitHub repository
   github: z.object({
-    owner: z.string().min(1, 'GitHub owner required'),
-    repo: z.string().min(1, 'GitHub repo required'),
-    branch: z.string().default('main'),
-    docsPath: z.string().default('docs')
+    owner: z.string().min(1, "GitHub owner required"),
+    repo: z.string().min(1, "GitHub repo required"),
+    branch: z.string().default("main"),
+    docsPath: z.string().default("docs"),
   }),
 
   // Authentication mode
-  auth: z.discriminatedUnion('mode', [
+  auth: z.discriminatedUnion("mode", [
     // Public mode - no login, password for approval
     z.object({
-      mode: z.literal('public'),
-      adminPassword: z.string().min(1, 'Admin password required for public mode')
+      mode: z.literal("public"),
+      adminPassword: z
+        .string()
+        .min(1, "Admin password required for public mode"),
     }),
     // Domain-restricted - magic link email verification
     z.object({
-      mode: z.literal('domain-restricted'),
-      allowedDomains: z.array(z.string()).min(1, 'At least one domain required'),
-      emailFrom: z.string().email('Valid email required for sending magic links')
+      mode: z.literal("domain-restricted"),
+      allowedDomains: z
+        .array(z.string())
+        .min(1, "At least one domain required"),
+      emailFrom: z
+        .string()
+        .email("Valid email required for sending magic links"),
     }),
     // OAuth - GitHub/Google login
     z.object({
-      mode: z.literal('oauth'),
-      providers: z.array(z.enum(['github', 'google'])).min(1, 'At least one OAuth provider required'),
-      allowedDomains: z.array(z.string()).optional()
-    })
+      mode: z.literal("oauth"),
+      providers: z
+        .array(z.enum(["github", "google"]))
+        .min(1, "At least one OAuth provider required"),
+      allowedDomains: z.array(z.string()).optional(),
+    }),
   ]),
 
   // Admin users
   admins: z.object({
-    emails: z.array(z.string().email()).min(1, 'At least one admin email required')
+    emails: z
+      .array(z.string().email())
+      .min(1, "At least one admin email required"),
   }),
 
   // Optional branding
-  branding: z.object({
-    name: z.string().default('Documentation'),
-    logo: z.string().optional()
-  }).optional()
+  branding: z
+    .object({
+      name: z.string().default("Documentation"),
+      logo: z.string().optional(),
+    })
+    .optional(),
 });
 
 export type DocsConfig = z.infer<typeof configSchema>;
 
 // Helper to validate environment variables
 export function validateEnv() {
-  const required = ['GITHUB_TOKEN', 'APP_URL', 'SESSION_SECRET'];
-  const missing = required.filter(key => !process.env[key]);
+  const required = ["GITHUB_TOKEN", "APP_URL", "SESSION_SECRET"];
+  const missing = required.filter((key) => !process.env[key]);
 
   if (missing.length > 0) {
-    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+    throw new Error(
+      `Missing required environment variables: ${missing.join(", ")}`
+    );
   }
 }
 ```
@@ -304,21 +316,21 @@ export function validateEnv() {
 **packages/docpush/src/core/config/loader.ts:**
 
 ```typescript
-import path from 'path';
-import fs from 'fs';
-import { configSchema, type DocsConfig } from './schema';
+import path from "path";
+import fs from "fs";
+import { configSchema, type DocsConfig } from "./schema";
 
 let cachedConfig: DocsConfig | null = null;
 
-export async function loadConfig(configPath = './docs.config.js'): Promise<DocsConfig> {
+export async function loadConfig(
+  configPath = "./docs.config.js"
+): Promise<DocsConfig> {
   if (cachedConfig) return cachedConfig;
 
   const fullPath = path.resolve(process.cwd(), configPath);
 
   if (!fs.existsSync(fullPath)) {
-    throw new Error(
-      'docs.config.js not found. Run: npx docpush init'
-    );
+    throw new Error("docs.config.js not found. Run: npx docpush init");
   }
 
   try {
@@ -330,12 +342,12 @@ export async function loadConfig(configPath = './docs.config.js'): Promise<DocsC
 
     return cachedConfig;
   } catch (error: any) {
-    if (error.name === 'ZodError') {
-      console.error('Configuration validation failed:');
+    if (error.name === "ZodError") {
+      console.error("Configuration validation failed:");
       error.errors.forEach((err: any) => {
-        console.error(`  - ${err.path.join('.')}: ${err.message}`);
+        console.error(`  - ${err.path.join(".")}: ${err.message}`);
       });
-      throw new Error('Invalid configuration');
+      throw new Error("Invalid configuration");
     }
     throw error;
   }
@@ -354,16 +366,16 @@ export function resetConfigCache() {
 **packages/docpush/src/server/index.ts:**
 
 ```typescript
-import express from 'express';
-import cors from 'cors';
-import session from 'express-session';
-import passport from 'passport';
-import { loadConfig, validateEnv } from '../core/config/loader';
-import { initDatabase } from './db';
-import authRoutes from './routes/auth';
-import draftsRoutes from './routes/drafts';
-import docsRoutes from './routes/docs';
-import mediaRoutes from './routes/media';
+import express from "express";
+import cors from "cors";
+import session from "express-session";
+import passport from "passport";
+import { loadConfig, validateEnv } from "../core/config/loader";
+import { initDatabase } from "./db";
+import authRoutes from "./routes/auth";
+import draftsRoutes from "./routes/drafts";
+import docsRoutes from "./routes/docs";
+import mediaRoutes from "./routes/media";
 
 export async function createServer() {
   // Validate environment
@@ -379,26 +391,30 @@ export async function createServer() {
   const app = express();
 
   // Middleware
-  app.use(cors({
-    origin: process.env.APP_URL,
-    credentials: true
-  }));
+  app.use(
+    cors({
+      origin: process.env.APP_URL,
+      credentials: true,
+    })
+  );
 
-  app.use(express.json({ limit: '10mb' }));
+  app.use(express.json({ limit: "10mb" }));
   app.use(express.urlencoded({ extended: true }));
 
   // Session
-  app.use(session({
-    secret: process.env.SESSION_SECRET!,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: 'lax'
-    }
-  }));
+  app.use(
+    session({
+      secret: process.env.SESSION_SECRET!,
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        sameSite: "lax",
+      },
+    })
+  );
 
   // Passport
   app.use(passport.initialize());
@@ -411,23 +427,30 @@ export async function createServer() {
   });
 
   // API Routes
-  app.use('/api/auth', authRoutes);
-  app.use('/api/drafts', draftsRoutes);
-  app.use('/api/docs', docsRoutes);
-  app.use('/api/media', mediaRoutes);
+  app.use("/api/auth", authRoutes);
+  app.use("/api/drafts", draftsRoutes);
+  app.use("/api/docs", docsRoutes);
+  app.use("/api/media", mediaRoutes);
 
   // Health check
-  app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok", timestamp: new Date().toISOString() });
   });
 
   // Error handler
-  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    console.error('Server error:', err);
-    res.status(err.status || 500).json({
-      error: err.message || 'Internal server error'
-    });
-  });
+  app.use(
+    (
+      err: any,
+      req: express.Request,
+      res: express.Response,
+      next: express.NextFunction
+    ) => {
+      console.error("Server error:", err);
+      res.status(err.status || 500).json({
+        error: err.message || "Internal server error",
+      });
+    }
+  );
 
   return app;
 }
@@ -444,103 +467,81 @@ export async function startServer(port: number = 3000) {
 
 ---
 
-## Task 1.5: Database Setup
+## Task 1.5: JSON File Storage
 
-**packages/docpush/src/server/db/schema.sql:**
-
-```sql
--- Users table
-CREATE TABLE IF NOT EXISTS users (
-  id TEXT PRIMARY KEY,
-  email TEXT UNIQUE NOT NULL,
-  name TEXT,
-  avatar_url TEXT,
-  provider TEXT, -- 'email', 'github', 'google'
-  provider_id TEXT,
-  created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
-);
-
-CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-
--- Sessions table (for express-session)
-CREATE TABLE IF NOT EXISTS sessions (
-  sid TEXT PRIMARY KEY,
-  sess TEXT NOT NULL,
-  expired INTEGER NOT NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_sessions_expired ON sessions(expired);
-
--- Drafts table
-CREATE TABLE IF NOT EXISTS drafts (
-  id TEXT PRIMARY KEY,
-  doc_path TEXT NOT NULL,
-  branch_name TEXT NOT NULL UNIQUE,
-  title TEXT,
-  author_id TEXT REFERENCES users(id),
-  status TEXT CHECK(status IN ('pending', 'approved', 'rejected')) DEFAULT 'pending',
-  created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
-  updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
-);
-
-CREATE INDEX IF NOT EXISTS idx_drafts_status ON drafts(status);
-CREATE INDEX IF NOT EXISTS idx_drafts_author ON drafts(author_id);
-CREATE INDEX IF NOT EXISTS idx_drafts_created ON drafts(created_at DESC);
-
--- Comments table
-CREATE TABLE IF NOT EXISTS comments (
-  id TEXT PRIMARY KEY,
-  draft_id TEXT NOT NULL REFERENCES drafts(id) ON DELETE CASCADE,
-  user_id TEXT REFERENCES users(id),
-  content TEXT NOT NULL,
-  created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
-);
-
-CREATE INDEX IF NOT EXISTS idx_comments_draft ON comments(draft_id);
-
--- Magic links table (for domain-restricted auth)
-CREATE TABLE IF NOT EXISTS magic_links (
-  token TEXT PRIMARY KEY,
-  email TEXT NOT NULL,
-  expires_at INTEGER NOT NULL,
-  used INTEGER DEFAULT 0
-);
-
-CREATE INDEX IF NOT EXISTS idx_magic_links_expires ON magic_links(expires_at);
-```
+Instead of a database, DocPush uses simple JSON files stored in `.docpush/` folder. This makes the package simpler to install and requires no database setup.
 
 **packages/docpush/src/server/db/index.ts:**
 
 ```typescript
-import Database from 'better-sqlite3';
-import fs from 'fs';
-import path from 'path';
-import { randomUUID } from 'crypto';
+import fs from "fs-extra";
+import path from "path";
+import { randomUUID } from "crypto";
 
-let db: Database.Database;
+const DATA_DIR = ".docpush";
+const DRAFTS_FILE = "drafts.json";
+const SESSIONS_FILE = "sessions.json";
 
-export async function initDatabase() {
-  const dbPath = process.env.DATABASE_PATH || './docpush.db';
-
-  db = new Database(dbPath);
-
-  // Enable foreign keys
-  db.pragma('foreign_keys = ON');
-
-  // Run migrations
-  const schemaPath = path.join(__dirname, 'schema.sql');
-  const schema = fs.readFileSync(schemaPath, 'utf-8');
-
-  db.exec(schema);
-
-  console.log('✓ Database initialized');
+// Types
+export interface Draft {
+  id: string;
+  docPath: string;
+  branchName: string;
+  title: string;
+  authorId: string | null;
+  authorEmail: string | null;
+  status: "pending" | "approved" | "rejected";
+  createdAt: number;
+  updatedAt: number;
 }
 
-export function getDb() {
-  if (!db) {
-    throw new Error('Database not initialized. Call initDatabase() first');
+export interface DraftComment {
+  id: string;
+  draftId: string;
+  userId: string | null;
+  userEmail: string | null;
+  userName: string | null;
+  content: string;
+  createdAt: number;
+}
+
+interface DraftsData {
+  drafts: Draft[];
+  comments: DraftComment[];
+}
+
+interface SessionsData {
+  sessions: Record<
+    string,
+    { userId: string; email: string; name?: string; expiresAt: number }
+  >;
+  magicLinks: Record<
+    string,
+    { email: string; expiresAt: number; used: boolean }
+  >;
+}
+
+// Ensure data directory exists
+async function ensureDataDir(): Promise<string> {
+  const dataDir = path.join(process.cwd(), DATA_DIR);
+  await fs.ensureDir(dataDir);
+  return dataDir;
+}
+
+// Load/Save helpers
+async function loadDraftsData(): Promise<DraftsData> {
+  const dataDir = await ensureDataDir();
+  const filePath = path.join(dataDir, DRAFTS_FILE);
+
+  if (await fs.pathExists(filePath)) {
+    return fs.readJson(filePath);
   }
-  return db;
+  return { drafts: [], comments: [] };
+}
+
+async function saveDraftsData(data: DraftsData): Promise<void> {
+  const dataDir = await ensureDataDir();
+  await fs.writeJson(path.join(dataDir, DRAFTS_FILE), data, { spaces: 2 });
 }
 
 // Helper functions
@@ -551,7 +552,89 @@ export function generateId(): string {
 export function now(): number {
   return Math.floor(Date.now() / 1000);
 }
+
+// Draft CRUD operations
+export async function getDrafts(status?: string): Promise<Draft[]> {
+  const data = await loadDraftsData();
+  return status ? data.drafts.filter((d) => d.status === status) : data.drafts;
+}
+
+export async function getDraft(id: string): Promise<Draft | null> {
+  const data = await loadDraftsData();
+  return data.drafts.find((d) => d.id === id) || null;
+}
+
+export async function createDraft(
+  draft: Omit<Draft, "id" | "createdAt" | "updatedAt">
+): Promise<Draft> {
+  const data = await loadDraftsData();
+  const newDraft: Draft = {
+    ...draft,
+    id: generateId(),
+    createdAt: now(),
+    updatedAt: now(),
+  };
+  data.drafts.push(newDraft);
+  await saveDraftsData(data);
+  return newDraft;
+}
+
+export async function updateDraft(
+  id: string,
+  updates: Partial<Draft>
+): Promise<Draft | null> {
+  const data = await loadDraftsData();
+  const index = data.drafts.findIndex((d) => d.id === id);
+  if (index === -1) return null;
+
+  data.drafts[index] = { ...data.drafts[index], ...updates, updatedAt: now() };
+  await saveDraftsData(data);
+  return data.drafts[index];
+}
+
+export async function deleteDraft(id: string): Promise<boolean> {
+  const data = await loadDraftsData();
+  const index = data.drafts.findIndex((d) => d.id === id);
+  if (index === -1) return false;
+
+  data.drafts.splice(index, 1);
+  data.comments = data.comments.filter((c) => c.draftId !== id);
+  await saveDraftsData(data);
+  return true;
+}
+
+// Comment operations
+export async function getComments(draftId: string): Promise<DraftComment[]> {
+  const data = await loadDraftsData();
+  return data.comments.filter((c) => c.draftId === draftId);
+}
+
+export async function addComment(
+  comment: Omit<DraftComment, "id" | "createdAt">
+): Promise<DraftComment> {
+  const data = await loadDraftsData();
+  const newComment: DraftComment = {
+    ...comment,
+    id: generateId(),
+    createdAt: now(),
+  };
+  data.comments.push(newComment);
+  await saveDraftsData(data);
+  return newComment;
+}
 ```
+
+**Data files created:**
+
+- `.docpush/drafts.json` - Draft metadata and comments
+- `.docpush/sessions.json` - User sessions and magic link tokens
+
+**Benefits of JSON storage:**
+
+- No database installation required
+- Human-readable data files
+- Easy to backup and migrate
+- Works on any Node.js platform
 
 ---
 
@@ -560,14 +643,14 @@ export function now(): number {
 **packages/docpush/src/core/github/client.ts:**
 
 ```typescript
-import { Octokit } from '@octokit/rest';
-import type { DocsConfig } from '../config/schema';
+import { Octokit } from "@octokit/rest";
+import type { DocsConfig } from "../config/schema";
 
 export class GitHubClient {
   private octokit: Octokit;
-  private config: DocsConfig['github'];
+  private config: DocsConfig["github"];
 
-  constructor(token: string, config: DocsConfig['github']) {
+  constructor(token: string, config: DocsConfig["github"]) {
     this.octokit = new Octokit({ auth: token });
     this.config = config;
   }
@@ -575,19 +658,19 @@ export class GitHubClient {
   /**
    * Get documentation file tree
    */
-  async getDocsTree(): Promise<Array<{ path: string; type: 'file' | 'dir' }>> {
+  async getDocsTree(): Promise<Array<{ path: string; type: "file" | "dir" }>> {
     const { data } = await this.octokit.git.getTree({
       owner: this.config.owner,
       repo: this.config.repo,
       tree_sha: this.config.branch,
-      recursive: '1'
+      recursive: "1",
     });
 
     return data.tree
-      .filter(item => item.path?.startsWith(this.config.docsPath))
-      .map(item => ({
-        path: item.path!.replace(`${this.config.docsPath}/`, ''),
-        type: item.type === 'tree' ? 'dir' : 'file'
+      .filter((item) => item.path?.startsWith(this.config.docsPath))
+      .map((item) => ({
+        path: item.path!.replace(`${this.config.docsPath}/`, ""),
+        type: item.type === "tree" ? "dir" : "file",
       }));
   }
 
@@ -601,14 +684,14 @@ export class GitHubClient {
       owner: this.config.owner,
       repo: this.config.repo,
       path: fullPath,
-      ref: ref || this.config.branch
+      ref: ref || this.config.branch,
     });
 
-    if ('content' in data) {
-      return Buffer.from(data.content, 'base64').toString('utf-8');
+    if ("content" in data) {
+      return Buffer.from(data.content, "base64").toString("utf-8");
     }
 
-    throw new Error('Path is not a file');
+    throw new Error("Path is not a file");
   }
 
   /**
@@ -619,7 +702,7 @@ export class GitHubClient {
     const { data: ref } = await this.octokit.git.getRef({
       owner: this.config.owner,
       repo: this.config.repo,
-      ref: `heads/${this.config.branch}`
+      ref: `heads/${this.config.branch}`,
     });
 
     const sha = ref.object.sha;
@@ -629,7 +712,7 @@ export class GitHubClient {
       owner: this.config.owner,
       repo: this.config.repo,
       ref: `refs/heads/${branchName}`,
-      sha
+      sha,
     });
 
     return sha;
@@ -653,9 +736,9 @@ export class GitHubClient {
         owner: this.config.owner,
         repo: this.config.repo,
         path: fullPath,
-        ref: branchName
+        ref: branchName,
       });
-      if ('sha' in data) sha = data.sha;
+      if ("sha" in data) sha = data.sha;
     } catch (e) {
       // File doesn't exist yet, that's ok
     }
@@ -666,9 +749,9 @@ export class GitHubClient {
       repo: this.config.repo,
       path: fullPath,
       message,
-      content: Buffer.from(content).toString('base64'),
+      content: Buffer.from(content).toString("base64"),
       branch: branchName,
-      sha
+      sha,
     });
   }
 
@@ -686,7 +769,7 @@ export class GitHubClient {
       head: branchName,
       base: this.config.branch,
       title,
-      body
+      body,
     });
 
     return data.number;
@@ -700,7 +783,7 @@ export class GitHubClient {
       owner: this.config.owner,
       repo: this.config.repo,
       pull_number: prNumber,
-      merge_method: 'squash'
+      merge_method: "squash",
     });
   }
 
@@ -711,33 +794,35 @@ export class GitHubClient {
     await this.octokit.git.deleteRef({
       owner: this.config.owner,
       repo: this.config.repo,
-      ref: `heads/${branchName}`
+      ref: `heads/${branchName}`,
     });
   }
 
   /**
    * Get commit history for file
    */
-  async getFileHistory(filePath: string): Promise<Array<{
-    sha: string;
-    message: string;
-    date: string;
-    author: string;
-  }>> {
+  async getFileHistory(filePath: string): Promise<
+    Array<{
+      sha: string;
+      message: string;
+      date: string;
+      author: string;
+    }>
+  > {
     const fullPath = `${this.config.docsPath}/${filePath}`;
 
     const { data } = await this.octokit.repos.listCommits({
       owner: this.config.owner,
       repo: this.config.repo,
       path: fullPath,
-      per_page: 50
+      per_page: 50,
     });
 
-    return data.map(commit => ({
+    return data.map((commit) => ({
       sha: commit.sha,
       message: commit.commit.message,
-      date: commit.commit.author?.date || '',
-      author: commit.commit.author?.name || 'Unknown'
+      date: commit.commit.author?.date || "",
+      author: commit.commit.author?.name || "Unknown",
     }));
   }
 }

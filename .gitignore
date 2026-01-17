@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+.next/
+out/
+
+# DocPush local data
+.docpush/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.dev.vars
+
+# Database (legacy)
+*.db
+*.sqlite
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test coverage
+coverage/
+
+# Turbo
+.turbo/
+
+# Package lock files (using pnpm)
+package-lock.json
+yarn.lock

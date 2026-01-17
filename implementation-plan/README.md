@@ -92,7 +92,7 @@ Set up npm package structure and core infrastructure
 - CLI commands (init, start, build)
 - Config schema with Zod validation
 - Express server setup
-- SQLite/PostgreSQL database schema
+- JSON file storage (.docpush/ folder)
 - GitHub API client (Octokit)
 - Session management
 
@@ -192,10 +192,10 @@ Publish to npm and distribute
 - Octokit (GitHub API client)
 - Resend (email for magic links)
 
-**Database:**
+**Data Storage:**
 
-- SQLite (default via better-sqlite3)
-- PostgreSQL (optional via pg)
+- JSON files in `.docpush/` folder (no database required!)
+- Data includes: draft metadata, sessions, comments
 
 **Storage:**
 
@@ -222,7 +222,6 @@ Publish to npm and distribute
 
 - Resend (email): $0 (100 emails/day free)
 - AWS S3 (media): ~$1/month (10GB)
-- PostgreSQL hosting: $0-10/month (if not using SQLite)
 
 **Total: $0-10/month per installation** (can be $0 on free tiers)
 
