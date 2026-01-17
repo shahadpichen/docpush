@@ -1,6 +1,10 @@
 import chalk from 'chalk';
+import { config } from 'dotenv';
 
 export async function startCommand(options: { port: string }): Promise<void> {
+  // Load .env file from current working directory
+  config();
+
   const port = Number.parseInt(options.port);
 
   console.log(chalk.blue('🚀 Starting DocPush...\n'));
