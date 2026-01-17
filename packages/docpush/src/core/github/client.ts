@@ -18,14 +18,14 @@ export class GitHubClient {
       owner: this.config.owner,
       repo: this.config.repo,
       tree_sha: this.config.branch,
-      recursive: '1'
+      recursive: '1',
     });
 
     return data.tree
-      .filter(item => item.path?.startsWith(this.config.docsPath))
-      .map(item => ({
+      .filter((item) => item.path && item.path.startsWith(this.config.docsPath))
+      .map((item) => ({
         path: item.path!.replace(`${this.config.docsPath}/`, ''),
-        type: item.type === 'tree' ? 'dir' as const : 'file' as const
+        type: item.type === 'tree' ? ('dir' as const) : ('file' as const),
       }));
   }
 
@@ -39,7 +39,7 @@ export class GitHubClient {
       owner: this.config.owner,
       repo: this.config.repo,
       path: fullPath,
-      ref: ref || this.config.branch
+      ref: ref || this.config.branch,
     });
 
     if ('content' in data) {
@@ -57,7 +57,7 @@ export class GitHubClient {
     const { data: ref } = await this.octokit.git.getRef({
       owner: this.config.owner,
       repo: this.config.repo,
-      ref: `heads/${this.config.branch}`
+      ref: `heads/${this.config.branch}`,
     });
 
     const sha = ref.object.sha;
@@ -67,7 +67,7 @@ export class GitHubClient {
       owner: this.config.owner,
       repo: this.config.repo,
       ref: `refs/heads/${branchName}`,
-      sha
+      sha,
     });
 
     return sha;
@@ -91,7 +91,7 @@ export class GitHubClient {
         owner: this.config.owner,
         repo: this.config.repo,
         path: fullPath,
-        ref: branchName
+        ref: branchName,
       });
       if ('sha' in data) sha = data.sha;
     } catch (e: any) {
@@ -107,25 +107,21 @@ export class GitHubClient {
       message,
       content: Buffer.from(content).toString('base64'),
       branch: branchName,
-      sha
+      sha,
     });
   }
 
   /**
    * Create pull request
    */
-  async createPullRequest(
-    branchName: string,
-    title: string,
-    body: string
-  ): Promise<number> {
+  async createPullRequest(branchName: string, title: string, body: string): Promise<number> {
     const { data } = await this.octokit.pulls.create({
       owner: this.config.owner,
       repo: this.config.repo,
       head: branchName,
       base: this.config.branch,
       title,
-      body
+      body,
     });
 
     return data.number;
@@ -139,7 +135,7 @@ export class GitHubClient {
       owner: this.config.owner,
       repo: this.config.repo,
       pull_number: prNumber,
-      merge_method: 'squash'
+      merge_method: 'squash',
     });
   }
 
@@ -150,33 +146,35 @@ export class GitHubClient {
     await this.octokit.git.deleteRef({
       owner: this.config.owner,
       repo: this.config.repo,
-      ref: `heads/${branchName}`
+      ref: `heads/${branchName}`,
     });
   }
 
   /**
    * Get commit history for file
    */
-  async getFileHistory(filePath: string): Promise<Array<{
-    sha: string;
-    message: string;
-    date: string;
-    author: string;
-  }>> {
+  async getFileHistory(filePath: string): Promise<
+    Array<{
+      sha: string;
+      message: string;
+      date: string;
+      author: string;
+    }>
+  > {
     const fullPath = `${this.config.docsPath}/${filePath}`;
 
     const { data } = await this.octokit.repos.listCommits({
       owner: this.config.owner,
       repo: this.config.repo,
       path: fullPath,
-      per_page: 50
+      per_page: 50,
     });
 
-    return data.map(commit => ({
+    return data.map((commit) => ({
       sha: commit.sha,
       message: commit.commit.message,
       date: commit.commit.author?.date || '',
-      author: commit.commit.author?.name || 'Unknown'
+      author: commit.commit.author?.name || 'Unknown',
     }));
   }
 }

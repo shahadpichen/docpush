@@ -3,13 +3,13 @@ export { loadConfig, configSchema, validateEnv, resetConfigCache } from './core/
 export type { DocsConfig } from './core/config';
 export { GitHubClient } from './core/github';
 export { createServer, startServer } from './server';
-export { 
-  generateId, 
-  now, 
-  getDrafts, 
-  getDraft, 
-  createDraft, 
-  updateDraft, 
+export {
+  generateId,
+  now,
+  getDrafts,
+  getDraft,
+  createDraft,
+  updateDraft,
   deleteDraft,
   getComments,
   addComment,
@@ -17,6 +17,6 @@ export {
   getSession,
   deleteSession,
   createMagicLink,
-  verifyMagicLink
-} from './server/db';
-export type { Draft, DraftComment } from './server/db';
+  verifyMagicLink,
+} from './server/storage';
+export type { Draft, DraftComment } from './server/storage';

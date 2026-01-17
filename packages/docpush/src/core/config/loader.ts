@@ -1,6 +1,6 @@
-import path from 'path';
-import fs from 'fs';
-import { configSchema, type DocsConfig } from './schema';
+import fs from 'node:fs';
+import path from 'node:path';
+import { type DocsConfig, configSchema } from './schema';
 
 let cachedConfig: DocsConfig | null = null;
 
@@ -10,15 +10,13 @@ export async function loadConfig(configPath = './docs.config.js'): Promise<DocsC
   const fullPath = path.resolve(process.cwd(), configPath);
 
   if (!fs.existsSync(fullPath)) {
-    throw new Error(
-      'docs.config.js not found. Run: npx docpush init'
-    );
+    throw new Error('docs.config.js not found. Run: npx docpush init');
   }
 
   try {
     // Clear require cache to pick up changes
     delete require.cache[require.resolve(fullPath)];
-    
+
     // Dynamic require - works in Node.js
     const userConfig = require(fullPath);
 

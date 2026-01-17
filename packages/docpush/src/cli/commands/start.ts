@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 
 export async function startCommand(options: { port: string }): Promise<void> {
-  const port = parseInt(options.port);
+  const port = Number.parseInt(options.port);
 
   console.log(chalk.blue('🚀 Starting DocPush...\n'));
 

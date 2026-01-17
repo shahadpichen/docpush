@@ -1,9 +1,8 @@
-import express from 'express';
 import cors from 'cors';
+import express from 'express';
 import session from 'express-session';
 import passport from 'passport';
 import { loadConfig, validateEnv } from '../core/config';
-import { initDatabase } from './db';
 
 // Extend Express Request
 declare global {
@@ -21,33 +20,34 @@ export async function createServer(): Promise<express.Application> {
   // Load config
   const config = await loadConfig();
 
-  // Initialize database
-  await initDatabase();
-
   // Create Express app
   const app = express();
 
   // Middleware
-  app.use(cors({
-    origin: process.env.APP_URL,
-    credentials: true
-  }));
+  app.use(
+    cors({
+      origin: process.env.APP_URL,
+      credentials: true,
+    })
+  );
 
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true }));
 
   // Session
-  app.use(session({
-    secret: process.env.SESSION_SECRET!,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: 'lax'
-    }
-  }));
+  app.use(
+    session({
+      secret: process.env.SESSION_SECRET!,
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        sameSite: 'lax',
+      },
+    })
+  );
 
   // Passport
   app.use(passport.initialize());
@@ -61,10 +61,10 @@ export async function createServer(): Promise<express.Application> {
 
   // Health check
   app.get('/api/health', (req, res) => {
-    res.json({ 
-      status: 'ok', 
+    res.json({
+      status: 'ok',
       timestamp: new Date().toISOString(),
-      version: '1.0.0'
+      version: '1.0.0',
     });
   });
 
@@ -81,8 +81,8 @@ export async function createServer(): Promise<express.Application> {
         'POST /api/drafts',
         'PUT /api/drafts/:id',
         'POST /api/drafts/:id/approve',
-        'POST /api/drafts/:id/reject'
-      ]
+        'POST /api/drafts/:id/reject',
+      ],
     });
   });
 
@@ -90,14 +90,14 @@ export async function createServer(): Promise<express.Application> {
   app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
     console.error('Server error:', err);
     res.status(err.status || 500).json({
-      error: err.message || 'Internal server error'
+      error: err.message || 'Internal server error',
     });
   });
 
   return app;
 }
 
-export async function startServer(port: number = 3000): Promise<void> {
+export async function startServer(port = 3000): Promise<void> {
   const app = await createServer();
 
   app.listen(port, () => {

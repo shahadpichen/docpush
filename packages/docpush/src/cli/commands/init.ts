@@ -1,6 +1,6 @@
-import fs from 'fs-extra';
-import path from 'path';
+import path from 'node:path';
 import chalk from 'chalk';
+import fs from 'fs-extra';
 
 const WELCOME_TEMPLATE = `# Welcome to Your Documentation
 
@@ -86,7 +86,7 @@ export async function initCommand(): Promise<void> {
   console.log(chalk.green('✓'), 'Created docs/ folder with welcome.md');
 
   // 2. Create config file
-  if (!await fs.pathExists('./docs.config.js')) {
+  if (!(await fs.pathExists('./docs.config.js'))) {
     await fs.writeFile('./docs.config.js', CONFIG_TEMPLATE);
     console.log(chalk.green('✓'), 'Created docs.config.js');
   } else {
@@ -104,7 +104,7 @@ export async function initCommand(): Promise<void> {
     pkg.scripts = {
       ...pkg.scripts,
       'docs:dev': 'docpush start',
-      'docs:build': 'docpush build'
+      'docs:build': 'docpush build',
     };
     await fs.writeJson(pkgPath, pkg, { spaces: 2 });
     console.log(chalk.green('✓'), 'Updated package.json scripts');

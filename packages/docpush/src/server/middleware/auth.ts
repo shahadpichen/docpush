@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 import { loadConfig } from '../../core/config';
 
 // Extend Express Request type
@@ -17,7 +17,7 @@ declare global {
  * Check if user can edit documents
  */
 export async function requireEdit(req: Request, res: Response, next: NextFunction): Promise<void> {
-  const config = req.config || await loadConfig();
+  const config = req.config || (await loadConfig());
 
   // Public mode - anyone can edit
   if (config.auth.mode === 'public') {
@@ -38,7 +38,7 @@ export async function requireEdit(req: Request, res: Response, next: NextFunctio
  * Check if user is admin
  */
 export async function requireAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
-  const config = req.config || await loadConfig();
+  const config = req.config || (await loadConfig());
 
   // Public mode - check password header
   if (config.auth.mode === 'public') {
