@@ -120,18 +120,18 @@ Implement Git branch-based draft workflow
 - File tree API
 - Published docs content API
 
-### [Phase 4: Next.js Frontend](./phase-4-frontend.md) - Week 4
+### [Phase 4: React Components & Hooks](./phase-4-frontend.md) - Week 4
 
-Build web UI with editor and admin dashboard
+Build exportable React components for user integration (headless approach)
 
-- Next.js 14 app setup
-- File tree sidebar component
-- Monaco editor with live markdown preview
-- Autosave with 3-second debounce
-- Admin dashboard for draft approval
-- Comments panel
-- Authentication pages for all modes
-- TanStack Query for data fetching
+- DocPushProvider context for API connection
+- DocsSidebar component (file tree navigation)
+- MarkdownViewer and MarkdownEditor components
+- CommentsPanel component
+- DraftsList component with admin actions
+- SearchBar component
+- useDocs, useDrafts, useComments, useAuth hooks
+- Export as `docpush/react` subpackage
 
 ### [Phase 5: Error Handling & Polish](./phase-5-polish.md) - Week 5
 
