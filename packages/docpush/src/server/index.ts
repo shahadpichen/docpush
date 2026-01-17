@@ -2,13 +2,15 @@ import cors from 'cors';
 import express from 'express';
 import session from 'express-session';
 import passport from 'passport';
-import { loadConfig, validateEnv } from '../core/config';
+import { type DocsConfig, loadConfig, validateEnv } from '../core/config';
+import { setupAuth } from './auth';
+import authRoutes from './routes/auth';
 
 // Extend Express Request
 declare global {
   namespace Express {
     interface Request {
-      config?: any;
+      config?: DocsConfig;
     }
   }
 }
@@ -37,7 +39,7 @@ export async function createServer(): Promise<express.Application> {
   // Session
   app.use(
     session({
-      secret: process.env.SESSION_SECRET!,
+      secret: process.env.SESSION_SECRET || 'fallback-secret-change-me',
       resave: false,
       saveUninitialized: false,
       cookie: {
@@ -53,11 +55,17 @@ export async function createServer(): Promise<express.Application> {
   app.use(passport.initialize());
   app.use(passport.session());
 
+  // Setup auth strategies based on config
+  setupAuth(config);
+
   // Store config in request
   app.use((req, res, next) => {
     req.config = config;
     next();
   });
+
+  // Routes
+  app.use('/api/auth', authRoutes);
 
   // Health check
   app.get('/api/health', (req, res) => {
@@ -65,6 +73,7 @@ export async function createServer(): Promise<express.Application> {
       status: 'ok',
       timestamp: new Date().toISOString(),
       version: '1.0.0',
+      authMode: config.auth.mode,
     });
   });
 
@@ -73,8 +82,15 @@ export async function createServer(): Promise<express.Application> {
     res.json({
       name: 'DocPush API',
       version: '1.0.0',
+      authMode: config.auth.mode,
       endpoints: [
         'GET /api/health',
+        'GET /api/auth/me',
+        'POST /api/auth/logout',
+        'POST /api/auth/magic-link',
+        'POST /api/auth/verify',
+        'GET /api/auth/github',
+        'GET /api/auth/google',
         'GET /api/docs/tree',
         'GET /api/docs/content',
         'GET /api/drafts',
@@ -87,12 +103,19 @@ export async function createServer(): Promise<express.Application> {
   });
 
   // Error handler
-  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    console.error('Server error:', err);
-    res.status(err.status || 500).json({
-      error: err.message || 'Internal server error',
-    });
-  });
+  app.use(
+    (
+      err: Error & { status?: number },
+      req: express.Request,
+      res: express.Response,
+      _next: express.NextFunction
+    ) => {
+      console.error('Server error:', err);
+      res.status(err.status || 500).json({
+        error: err.message || 'Internal server error',
+      });
+    }
+  );
 
   return app;
 }

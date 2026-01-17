@@ -22,9 +22,12 @@ export class GitHubClient {
     });
 
     return data.tree
-      .filter((item) => item.path && item.path.startsWith(this.config.docsPath))
+      .filter(
+        (item): item is typeof item & { path: string } =>
+          typeof item.path === 'string' && item.path.startsWith(this.config.docsPath)
+      )
       .map((item) => ({
-        path: item.path!.replace(`${this.config.docsPath}/`, ''),
+        path: item.path.replace(`${this.config.docsPath}/`, ''),
         type: item.type === 'tree' ? ('dir' as const) : ('file' as const),
       }));
   }
@@ -94,8 +97,9 @@ export class GitHubClient {
         ref: branchName,
       });
       if ('sha' in data) sha = data.sha;
-    } catch (e: any) {
-      if (e.status !== 404) throw e;
+    } catch (e: unknown) {
+      const error = e as { status?: number };
+      if (error.status !== 404) throw e;
       // File doesn't exist yet, that's ok
     }
 

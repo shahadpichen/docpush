@@ -24,10 +24,11 @@ export async function loadConfig(configPath = './docs.config.js'): Promise<DocsC
     cachedConfig = configSchema.parse(userConfig);
 
     return cachedConfig;
-  } catch (error: any) {
-    if (error.name === 'ZodError') {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.name === 'ZodError') {
       console.error('Configuration validation failed:');
-      error.errors.forEach((err: any) => {
+      const zodError = error as unknown as { errors: Array<{ path: string[]; message: string }> };
+      zodError.errors.forEach((err) => {
         console.error(`  - ${err.path.join('.')}: ${err.message}`);
       });
       throw new Error('Invalid configuration');

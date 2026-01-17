@@ -9,8 +9,9 @@ export async function startCommand(options: { port: string }): Promise<void> {
   try {
     const { startServer } = await import('../../server');
     await startServer(port);
-  } catch (error: any) {
-    console.error(chalk.red('❌ Failed to start server:'), error.message);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error(chalk.red('❌ Failed to start server:'), message);
     process.exit(1);
   }
 }
