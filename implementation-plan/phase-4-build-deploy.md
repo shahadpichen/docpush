@@ -8,6 +8,42 @@
 
 ---
 
+## GitHub Token Permissions Required
+
+**User must create a GitHub Personal Access Token with these scopes:**
+
+### Required Scopes:
+- `repo` - Full repository access
+  - Create/delete branches
+  - Create/merge pull requests
+  - Read/write file contents
+  - Trigger workflows (workflow dispatch)
+
+### How User Creates Token:
+1. Go to https://github.com/settings/tokens/new
+2. Name: "Docs Platform Token"
+3. Select scopes: **repo** (check the box)
+4. Generate token
+5. Copy to `.dev.vars`:
+   ```bash
+   GITHUB_TOKEN=ghp_xxxxxxxxxxxx
+   ```
+
+### Token Permissions Table:
+
+| Action | Permission | Why |
+|--------|-----------|-----|
+| Create draft branch | `repo` | Creates `draft/doc-name-123` in user's repo |
+| Commit changes | `repo` | Writes to branch in user's repo |
+| Create PR | `repo` | Creates pull request when admin approves |
+| Merge PR | `repo` | Merges approved changes to main |
+| Delete branch | `repo` | Cleanup after merge/rejection |
+| Trigger workflow | `repo` | Triggers build after merge |
+
+**Security Note:** Token has full access to user's repository. Store in `.dev.vars` (never commit!).
+
+---
+
 ## Task 4.1: Docusaurus Setup (In User's Repo)
 
 User adds Docusaurus to **their own repository**:

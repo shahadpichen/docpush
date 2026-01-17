@@ -8,6 +8,98 @@
 
 ---
 
+## Task 3.0: Admin Middleware (All Auth Modes)
+
+**Create middleware that adapts to the configured auth mode:**
+
+```ts
+// apps/worker/src/middleware/admin.ts
+import { Context, Next } from 'hono';
+import { HTTPException } from 'hono/http-exception';
+import { getConfig } from '@yourorg/docs-platform/config';
+
+export const requireAdmin = async (c: Context, next: Next) => {
+  const config = await getConfig();
+  const user = c.get('user');
+
+  // Mode 1: Public - Check password header
+  if (config.auth.mode === 'public') {
+    const password = c.req.header('X-Admin-Password');
+    if (!password || password !== config.admins.password) {
+      throw new HTTPException(403, { message: 'Invalid admin password' });
+    }
+    await next();
+    return;
+  }
+
+  // Mode 2 & 3: Domain-Restricted or OAuth - Check email
+  if (!user?.email) {
+    throw new HTTPException(401, { message: 'Authentication required' });
+  }
+
+  if (!config.admins.emails.includes(user.email)) {
+    throw new HTTPException(403, { message: 'Admin access required' });
+  }
+
+  await next();
+};
+```
+
+**Usage in routes:**
+```ts
+// apps/worker/src/routes/drafts.ts
+import { requireAuth } from '../middleware/auth';
+import { requireAdmin } from '../middleware/admin';
+
+// Approve draft (admin only)
+app.post('/:id/approve', requireAuth, requireAdmin, async (c) => {
+  // Only admins reach here
+  // ...
+});
+```
+
+**How it works in each mode:**
+
+### Mode 1: Public
+- Anyone can edit (no login)
+- **Admin approval:** Frontend sends `X-Admin-Password` header
+- Simple password check against `config.admins.password`
+
+```ts
+// Frontend: Admin approval UI
+fetch('/api/drafts/123/approve', {
+  headers: {
+    'X-Admin-Password': userEnteredPassword
+  }
+});
+```
+
+### Mode 2: Domain-Restricted
+- Users verify via magic link (e.g., admin@company.com)
+- **Admin approval:** Check if verified email is in `config.admins.emails`
+- Admin must first verify their email, then approve
+
+```ts
+// Flow:
+// 1. Admin enters email → sends magic link
+// 2. Admin clicks link → gets session token
+// 3. Admin clicks "Approve" → checks email in admins list
+```
+
+### Mode 3: OAuth
+- Users login via GitHub/Google OAuth
+- **Admin approval:** Check if OAuth email is in `config.admins.emails`
+- Admin must first OAuth login, then approve
+
+```ts
+// Flow:
+// 1. Admin clicks "Login with GitHub"
+// 2. OAuth flow → gets user email
+// 3. Admin clicks "Approve" → checks email in admins list
+```
+
+---
+
 ## Task 3.1: Admin Dashboard
 
 ```tsx

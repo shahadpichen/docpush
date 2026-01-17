@@ -233,6 +233,153 @@ See `/examples` folder for complete setups.
 
 ---
 
+## Task 5.6: Package Publishing
+
+**Prepare monorepo for npm publishing:**
+
+### 1. Package.json Configuration
+
+```json
+// packages/core/package.json
+{
+  "name": "@yourorg/docs-platform",
+  "version": "1.0.0",
+  "description": "Self-hosted, Git-backed documentation platform",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./config": "./dist/config/index.js",
+    "./auth": "./dist/auth/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "pnpm build"
+  },
+  "keywords": [
+    "documentation",
+    "cloudflare",
+    "git",
+    "markdown",
+    "self-hosted"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourorg/docs-platform"
+  }
+}
+```
+
+### 2. What Gets Published vs What Doesn't
+
+**Published to npm (users install):**
+- `packages/core/` - Core logic, GitHub client
+- `packages/config/` - Config schema and loader
+- `packages/auth/` - Auth implementations
+- `packages/ui/` - Shared UI components
+- `apps/worker/` - Worker code (bundled)
+- `apps/web/` - Next.js code (bundled)
+
+**NOT published (stays in repo):**
+- `examples/` - Example projects for documentation
+- `.github/` - Our CI/CD workflows
+- Development config files
+
+### 3. Build Process
+
+```bash
+# Build all packages
+turbo build
+
+# Test locally before publishing
+cd packages/core
+pnpm link --global
+
+# In a test project
+pnpm link --global @yourorg/docs-platform
+```
+
+### 4. Publishing Workflow
+
+```bash
+# 1. Update version
+pnpm changeset
+
+# 2. Build
+turbo build
+
+# 3. Publish to npm
+pnpm changeset publish
+```
+
+### 5. CI/CD Publishing (GitHub Actions)
+
+```yaml
+# .github/workflows/publish.yml
+name: Publish to npm
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - run: pnpm install
+      - run: turbo build
+      - run: pnpm publish -r --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+```
+
+### 6. Versioning Strategy
+
+**Semantic Versioning:**
+- `1.0.0` - Initial release
+- `1.0.x` - Bug fixes
+- `1.x.0` - New features (backward compatible)
+- `x.0.0` - Breaking changes
+
+**Release Checklist:**
+- [ ] All tests passing
+- [ ] Documentation updated
+- [ ] CHANGELOG.md updated
+- [ ] Version bumped in package.json
+- [ ] Git tag created
+- [ ] Published to npm
+- [ ] GitHub release created
+
+### 7. Post-Publishing
+
+**Users install with:**
+```bash
+pnpm add @yourorg/docs-platform
+# or
+npm install @yourorg/docs-platform
+```
+
+**Update documentation site with:**
+- Installation instructions
+- Migration guides (for breaking changes)
+- API reference
+
+---
+
 ## Verification
 
 After Phase 5:

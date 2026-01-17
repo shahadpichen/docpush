@@ -8,6 +8,54 @@
 
 ---
 
+## Architecture: Package vs User Project
+
+### What We Build (Our npm Package):
+```
+docs-platform/                    ← Published to npm as @org/docs-platform
+├── apps/
+│   ├── web/                      ← Next.js app (source code)
+│   └── worker/                   ← Hono worker (source code)
+├── packages/
+│   ├── ui/                       ← Shared components
+│   ├── core/                     ← GitHub client, utilities
+│   ├── auth/                     ← Auth mode implementations
+│   └── config/                   ← Config schema
+├── package.json
+├── turbo.json
+└── README.md                     ← Installation instructions
+```
+**NO SECRETS IN OUR PACKAGE! This is open-source code.**
+
+### What Users Create (After Installing):
+```
+my-company-docs/                  ← User's repository
+├── content/                      ← Their documentation files
+│   ├── getting-started.md
+│   └── api-reference.md
+├── docs.config.ts                ← USER creates (their config)
+├── .dev.vars                     ← USER creates (their secrets)
+├── wrangler.toml                 ← USER creates (their Cloudflare settings)
+├── package.json
+│   └── dependencies:
+│       └── "@org/docs-platform": "^1.0.0"  ← Our package installed
+└── node_modules/
+    └── @org/docs-platform/       ← Our code runs from here
+```
+
+### When User Runs:
+```bash
+# In my-company-docs/ (user's project)
+wrangler dev
+# Executes: OUR worker code from node_modules
+# Using: THEIR .dev.vars (their GitHub token, their OAuth credentials)
+# Operating on: THEIR GitHub repo (owner: 'their-org', repo: 'their-docs')
+```
+
+**Critical:** Our code reads THEIR environment variables to access THEIR infrastructure.
+
+---
+
 ## Task 1.1: Project Initialization
 
 Create the package monorepo structure.
@@ -124,11 +172,24 @@ ADMIN_PASSWORD=xxxxx  # Simple password for approval UI
 
 ---
 
-## Task 1.3: Next.js App Setup
+## Task 1.3: Next.js App Setup (Cloudflare-Optimized)
+
+**Use Cloudflare's official Next.js template:**
 
 ```bash
+# Create Next.js app optimized for Cloudflare Workers
+pnpm create cloudflare@latest apps/web --framework=next
+```
+
+This automatically:
+- Sets up `@cloudflare/next-on-pages` adapter
+- Configures wrangler.toml for deployment
+- Optimizes for Cloudflare Workers runtime
+- Includes TypeScript and Tailwind CSS
+
+**Add additional dependencies:**
+```bash
 cd apps/web
-pnpm create next-app@latest . --typescript --tailwind --app
 pnpm add @monaco-editor/react react-markdown gray-matter
 pnpm dlx shadcn-ui@latest init
 ```
@@ -140,48 +201,72 @@ pnpm dlx shadcn-ui@latest init
 NEXT_PUBLIC_WORKER_URL=http://localhost:8787
 ```
 
-**Files Created:**
+**Files Auto-Created by Template:**
 - `apps/web/app/layout.tsx`
 - `apps/web/tailwind.config.js`
+- `apps/web/wrangler.toml` (for deployment)
+- `apps/web/next.config.mjs` (with Cloudflare adapter)
+
+**Manual Files to Create:**
 - `apps/web/lib/api-client.ts`
+
+**Reference:** [Cloudflare Next.js Guide](https://developers.cloudflare.com/workers/framework-guides/web-apps/nextjs/)
 
 ---
 
-## Task 1.4: Cloudflare Worker Setup
+## Task 1.4: Cloudflare Worker Setup (Hono Template)
+
+**Use official Hono template for Cloudflare Workers:**
 
 ```bash
-cd apps/worker
-pnpm add hono @cloudflare/workers-types
-pnpm add -D wrangler
+# Create Hono worker with Cloudflare template
+pnpm create hono@latest apps/worker
+# When prompted, select: "cloudflare-workers"
 ```
 
-**wrangler.toml:**
+This automatically:
+- Sets up Hono with TypeScript
+- Includes wrangler.toml pre-configured
+- Adds @cloudflare/workers-types
+- Configures build tools
+
+**Update wrangler.toml (add bindings):**
 ```toml
 name = "docs-platform-api"
 main = "src/index.ts"
 compatibility_date = "2024-01-01"
 
+# KV for sessions (user creates their own)
 [[kv_namespaces]]
 binding = "KV"
-id = "preview_id"  # User creates their own
+id = "preview_id"  # User replaces with their KV ID
 
+# D1 for draft metadata (user creates their own)
 [[d1_databases]]
 binding = "DB"
 database_name = "docs-platform"
-database_id = "preview_id"  # User creates their own
+database_id = "preview_id"  # User replaces with their D1 ID
 
+# R2 for media (optional - user creates if needed)
 [[r2_buckets]]
 binding = "R2"
-bucket_name = "docs-assets"  # Optional
+bucket_name = "docs-assets"  # User creates if using R2
 ```
 
-**Basic Worker:**
+**Update Basic Worker:**
 ```ts
 // apps/worker/src/index.ts
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 
-const app = new Hono();
+type Bindings = {
+  KV: KVNamespace;
+  DB: D1Database;
+  R2: R2Bucket;
+  GITHUB_TOKEN: string;
+};
+
+const app = new Hono<{ Bindings: Bindings }>();
 
 app.use('/*', cors());
 
@@ -189,6 +274,41 @@ app.get('/health', (c) => c.json({ status: 'ok' }));
 
 export default app;
 ```
+
+**Reference:** [Hono Cloudflare Workers Guide](https://hono.dev/docs/getting-started/cloudflare-workers)
+
+---
+
+## Task 1.4.5: Configure Service Bindings (Optional)
+
+**If you want Next.js to call the Worker directly (instead of HTTP):**
+
+```toml
+# apps/web/wrangler.toml
+name = "docs-platform-web"
+compatibility_date = "2024-01-01"
+
+[[services]]
+binding = "API"
+service = "docs-platform-api"
+environment = "production"
+```
+
+```ts
+// apps/web/lib/api-client.ts
+export async function callAPI(endpoint: string, options?: RequestInit) {
+  // In development: HTTP
+  if (process.env.NODE_ENV === 'development') {
+    return fetch(`${process.env.NEXT_PUBLIC_WORKER_URL}${endpoint}`, options);
+  }
+
+  // In production: Service binding (faster, no HTTP overhead)
+  // @ts-ignore - Cloudflare binding
+  return env.API.fetch(new Request(`https://api${endpoint}`, options));
+}
+```
+
+**Note:** Most users will use HTTP (simpler setup). Service bindings are optional for advanced users.
 
 ---
 
@@ -246,7 +366,86 @@ export class GitHubClient {
     return file;
   }
 
-  // More methods: createPR, mergePR, getFileContent...
+  // Get branch details
+  async getBranch(branchName: string) {
+    const { data } = await this.octokit.repos.getBranch({
+      owner: this.config.owner,
+      repo: this.config.repo,
+      branch: branchName
+    });
+    return { name: branchName, sha: data.commit.sha };
+  }
+
+  // Get file content
+  async getFileContent(path: string, ref?: string) {
+    const { data } = await this.octokit.repos.getContent({
+      owner: this.config.owner,
+      repo: this.config.repo,
+      path,
+      ref: ref || this.config.branch
+    });
+
+    if ('content' in data) {
+      return Buffer.from(data.content, 'base64').toString('utf-8');
+    }
+    throw new Error('Path is not a file');
+  }
+
+  // Create pull request
+  async createPullRequest(params: {
+    head: string;
+    base: string;
+    title: string;
+    body: string;
+  }) {
+    const { data } = await this.octokit.pulls.create({
+      owner: this.config.owner,
+      repo: this.config.repo,
+      ...params
+    });
+    return { number: data.number, url: data.html_url };
+  }
+
+  // Merge pull request
+  async mergePullRequest(prNumber: number, options?: { merge_method?: 'merge' | 'squash' | 'rebase' }) {
+    const { data } = await this.octokit.pulls.merge({
+      owner: this.config.owner,
+      repo: this.config.repo,
+      pull_number: prNumber,
+      merge_method: options?.merge_method || 'squash'
+    });
+    return { merged: data.merged, sha: data.sha };
+  }
+
+  // Delete branch
+  async deleteBranch(branchName: string) {
+    await this.octokit.git.deleteRef({
+      owner: this.config.owner,
+      repo: this.config.repo,
+      ref: `heads/${branchName}`
+    });
+  }
+
+  // Get repository tree
+  async getTree(ref: string, options?: { recursive?: boolean }) {
+    const { data } = await this.octokit.git.getTree({
+      owner: this.config.owner,
+      repo: this.config.repo,
+      tree_sha: ref,
+      recursive: options?.recursive ? '1' : undefined
+    });
+    return data.tree;
+  }
+
+  // Trigger GitHub Actions workflow
+  async triggerWorkflow(workflowFile: string, ref: string = 'main') {
+    await this.octokit.actions.createWorkflowDispatch({
+      owner: this.config.owner,
+      repo: this.config.repo,
+      workflow_id: workflowFile,
+      ref
+    });
+  }
 }
 ```
 
@@ -490,6 +689,64 @@ If using OAuth mode:
 1. Create GitHub OAuth App: https://github.com/settings/developers
 2. Add credentials to .dev.vars
 \`\`\`
+
+---
+
+## Task 1.10.5: Development Workflow
+
+**For package developers (us):**
+
+### Local Development:
+```bash
+# In monorepo root
+pnpm install
+
+# Terminal 1: Run Worker
+cd apps/worker
+pnpm dev  # or: wrangler dev
+
+# Terminal 2: Run Next.js
+cd apps/web
+pnpm dev
+```
+
+### Testing Package Locally:
+```bash
+# Build all packages
+pnpm build
+
+# Create local npm link
+cd packages/core
+pnpm link --global
+
+# In a test project
+cd ../test-project
+pnpm link --global @yourorg/docs-platform
+```
+
+### Build for Publishing:
+```bash
+# Build all packages
+turbo build
+
+# Publish to npm (when ready)
+cd packages/core
+pnpm publish --access public
+```
+
+### User Installation (after publishing):
+```bash
+# Users run this in THEIR project
+pnpm add @yourorg/docs-platform
+
+# Then create docs.config.ts and .dev.vars
+# Then run: wrangler dev
+```
+
+**Key Difference:**
+- **We develop** in the monorepo (`docs-platform/`)
+- **Users install** from npm into their project (`my-company-docs/`)
+- Our code runs in their environment using their credentials
 
 ---
 

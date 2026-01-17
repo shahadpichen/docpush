@@ -12,7 +12,9 @@ This folder contains detailed implementation plans for building an **installable
 
 ## Timeline
 
-**Total Duration:** 3-4 weeks full-time (6-8 weeks part-time)
+**Total Duration:** 4-5 weeks full-time (8-10 weeks part-time)
+
+**Note:** Timeline includes additional tasks for proper Cloudflare setup, config loading, admin middleware, and package publishing.
 
 ## Key Architecture
 
@@ -127,6 +129,52 @@ Image uploads, UX improvements, admin tools
 - GitHub Actions: $0 (2k min/month free)
 
 **Total: $0-1/month per installation**
+
+## Development Workflow
+
+**For package developers (building the platform):**
+
+### Local Development:
+```bash
+# Clone and setup
+git clone https://github.com/yourorg/docs-platform
+cd docs-platform
+pnpm install
+
+# Terminal 1: Run Worker
+cd apps/worker
+pnpm dev
+
+# Terminal 2: Run Next.js
+cd apps/web
+pnpm dev
+```
+
+### Testing Locally:
+```bash
+# Build packages
+turbo build
+
+# Link for testing
+cd packages/core
+pnpm link --global
+
+# Test in a separate project
+cd /path/to/test-project
+pnpm link --global @yourorg/docs-platform
+```
+
+### Publishing:
+```bash
+# Publish to npm (when ready)
+pnpm changeset
+turbo build
+pnpm changeset publish
+```
+
+**Remember:** We build the package, users install it in their projects!
+
+---
 
 ## Getting Started
 

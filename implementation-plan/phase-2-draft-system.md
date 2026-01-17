@@ -8,6 +8,80 @@
 
 ---
 
+## Task 2.0: Config Loading Implementation
+
+**Create config loader that reads user's configuration:**
+
+```ts
+// packages/config/src/loader.ts
+import { configSchema, type DocsConfig } from './schema';
+import * as fs from 'fs/promises';
+import * as path from 'path';
+
+export async function loadConfig(configPath?: string): Promise<DocsConfig> {
+  // Default: look for docs.config.ts in user's project root
+  const defaultPath = path.join(process.cwd(), 'docs.config.ts');
+  const finalPath = configPath || defaultPath;
+
+  try {
+    // Dynamic import of user's config file
+    const configModule = await import(finalPath);
+    const config = configModule.default || configModule;
+
+    // Validate against schema
+    return configSchema.parse(config);
+  } catch (error) {
+    throw new Error(`Failed to load config from ${finalPath}: ${error.message}`);
+  }
+}
+
+// Export singleton for caching
+let cachedConfig: DocsConfig | null = null;
+
+export async function getConfig(): Promise<DocsConfig> {
+  if (!cachedConfig) {
+    cachedConfig = await loadConfig();
+  }
+  return cachedConfig;
+}
+
+// Reset cache (useful for testing)
+export function resetConfigCache() {
+  cachedConfig = null;
+}
+```
+
+**Usage in Worker:**
+```ts
+// apps/worker/src/index.ts
+import { getConfig } from '@yourorg/docs-platform/config';
+
+app.use('*', async (c, next) => {
+  // Load config once per request (uses cache)
+  const config = await getConfig();
+  c.set('config', config);
+  await next();
+});
+```
+
+**User's Config File** (they create this):
+```ts
+// docs.config.ts (in user's project)
+export default {
+  auth: { mode: 'public' },
+  admins: { emails: ['admin@company.com'], password: 'secret123' },
+  storage: {
+    type: 'github',
+    owner: 'their-org',
+    repo: 'their-docs',
+    branch: 'main',
+    path: 'content'
+  }
+};
+```
+
+---
+
 ## Task 2.1: D1 Database Schema
 
 User creates D1 database in **their Cloudflare account**.
