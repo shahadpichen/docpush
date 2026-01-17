@@ -1,5 +1,6 @@
 import { Octokit } from '@octokit/rest';
 import type { DocsConfig } from '../config';
+import { retryWithBackoff } from './retry';
 
 export class GitHubClient {
   private octokit: Octokit;
@@ -14,66 +15,72 @@ export class GitHubClient {
    * Get documentation file tree
    */
   async getDocsTree(): Promise<Array<{ path: string; type: 'file' | 'dir' }>> {
-    const { data } = await this.octokit.git.getTree({
-      owner: this.config.owner,
-      repo: this.config.repo,
-      tree_sha: this.config.branch,
-      recursive: '1',
-    });
+    return retryWithBackoff(async () => {
+      const { data } = await this.octokit.git.getTree({
+        owner: this.config.owner,
+        repo: this.config.repo,
+        tree_sha: this.config.branch,
+        recursive: '1',
+      });
 
-    return data.tree
-      .filter(
-        (item): item is typeof item & { path: string } =>
-          typeof item.path === 'string' && item.path.startsWith(this.config.docsPath)
-      )
-      .map((item) => ({
-        path: item.path.replace(`${this.config.docsPath}/`, ''),
-        type: item.type === 'tree' ? ('dir' as const) : ('file' as const),
-      }));
+      return data.tree
+        .filter(
+          (item): item is typeof item & { path: string } =>
+            typeof item.path === 'string' && item.path.startsWith(this.config.docsPath)
+        )
+        .map((item) => ({
+          path: item.path.replace(`${this.config.docsPath}/`, ''),
+          type: item.type === 'tree' ? ('dir' as const) : ('file' as const),
+        }));
+    });
   }
 
   /**
    * Get file content from repository
    */
   async getFileContent(filePath: string, ref?: string): Promise<string> {
-    const fullPath = `${this.config.docsPath}/${filePath}`;
+    return retryWithBackoff(async () => {
+      const fullPath = `${this.config.docsPath}/${filePath}`;
 
-    const { data } = await this.octokit.repos.getContent({
-      owner: this.config.owner,
-      repo: this.config.repo,
-      path: fullPath,
-      ref: ref || this.config.branch,
+      const { data } = await this.octokit.repos.getContent({
+        owner: this.config.owner,
+        repo: this.config.repo,
+        path: fullPath,
+        ref: ref || this.config.branch,
+      });
+
+      if ('content' in data) {
+        return Buffer.from(data.content, 'base64').toString('utf-8');
+      }
+
+      throw new Error('Path is not a file');
     });
-
-    if ('content' in data) {
-      return Buffer.from(data.content, 'base64').toString('utf-8');
-    }
-
-    throw new Error('Path is not a file');
   }
 
   /**
    * Create a new branch for draft
    */
   async createDraftBranch(branchName: string): Promise<string> {
-    // Get current main branch SHA
-    const { data: ref } = await this.octokit.git.getRef({
-      owner: this.config.owner,
-      repo: this.config.repo,
-      ref: `heads/${this.config.branch}`,
+    return retryWithBackoff(async () => {
+      // Get current main branch SHA
+      const { data: ref } = await this.octokit.git.getRef({
+        owner: this.config.owner,
+        repo: this.config.repo,
+        ref: `heads/${this.config.branch}`,
+      });
+
+      const sha = ref.object.sha;
+
+      // Create new branch
+      await this.octokit.git.createRef({
+        owner: this.config.owner,
+        repo: this.config.repo,
+        ref: `refs/heads/${branchName}`,
+        sha,
+      });
+
+      return sha;
     });
-
-    const sha = ref.object.sha;
-
-    // Create new branch
-    await this.octokit.git.createRef({
-      owner: this.config.owner,
-      repo: this.config.repo,
-      ref: `refs/heads/${branchName}`,
-      sha,
-    });
-
-    return sha;
   }
 
   /**
