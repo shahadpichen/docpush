@@ -1,6 +1,9 @@
 {
-  "name": "docpush",
+  "name": "@shahadpichen/docpush",
   "version": "1.0.0",
+  "publishConfig": {
+    "access": "public"
+  },
   "description": "Self-hosted, Git-backed collaborative documentation platform",
   "keywords": [
     "documentation",
@@ -10,10 +13,10 @@
     "cms",
     "self-hosted"
   ],
-  "homepage": "https://github.com/yourusername/docpush",
+  "homepage": "https://github.com/shahadpichen/docpush",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/docpush.git"
+    "url": "https://github.com/shahadpichen/docpush.git"
   },
   "license": "MIT",
   "author": "DocPush Team",
