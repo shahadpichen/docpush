@@ -18,9 +18,6 @@ interface OAuthUser {
 export function setupOAuth(config: DocsConfig) {
   if (config.auth.mode !== 'domain-restricted') return;
 
-  // Get allowed domains from config (required for domain-restricted)
-  const allowedDomains = config.auth.allowedDomains;
-
   // GitHub OAuth
   if (
     config.auth.providers.includes('github') &&
@@ -44,13 +41,8 @@ export function setupOAuth(config: DocsConfig) {
           try {
             const email = profile.emails?.[0]?.value || `${profile.username}@github.com`;
 
-            // Check domain restriction if configured
-            if (allowedDomains.length > 0) {
-              const domain = email.split('@')[1];
-              if (!allowedDomains.includes(domain)) {
-                return done(null, false);
-              }
-            }
+            // Domain check happens in requireEdit middleware, not here
+            // This allows anyone to login, but only allowed domains can edit
 
             const user: OAuthUser = {
               id: `github:${profile.id}`,
@@ -97,13 +89,8 @@ export function setupOAuth(config: DocsConfig) {
               return done(null, false);
             }
 
-            // Check domain restriction if configured
-            if (allowedDomains.length > 0) {
-              const domain = email.split('@')[1];
-              if (!allowedDomains.includes(domain)) {
-                return done(null, false);
-              }
-            }
+            // Domain check happens in requireEdit middleware, not here
+            // This allows anyone to login, but only allowed domains can edit
 
             const user: OAuthUser = {
               id: `google:${profile.id}`,

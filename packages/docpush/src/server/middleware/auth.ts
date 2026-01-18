@@ -25,10 +25,25 @@ export async function requireEdit(req: Request, res: Response, next: NextFunctio
     return next();
   }
 
-  // Domain-restricted or OAuth - must be logged in
+  // Domain-restricted - must be logged in
   if (!req.user) {
     res.status(401).json({ error: 'Authentication required' });
     return;
+  }
+
+  // For domain-restricted mode, check if user's email domain is allowed
+  if (config.auth.mode === 'domain-restricted') {
+    const userEmail = req.user.email;
+    if (!userEmail) {
+      res.status(403).json({ error: 'Email required for editing' });
+      return;
+    }
+
+    const domain = userEmail.split('@')[1];
+    if (!config.auth.allowedDomains.includes(domain)) {
+      res.status(403).json({ error: `Your email domain @${domain} is not allowed to edit` });
+      return;
+    }
   }
 
   next();

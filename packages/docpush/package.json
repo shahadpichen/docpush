@@ -1,6 +1,6 @@
 {
   "name": "@shahadpichen/docpush",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "publishConfig": {
     "access": "public"
   },
