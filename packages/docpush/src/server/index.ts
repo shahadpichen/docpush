@@ -30,7 +30,22 @@ export async function createServer(): Promise<express.Application> {
   // Middleware
   app.use(
     cors({
-      origin: process.env.APP_URL,
+      origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or curl)
+        if (!origin) return callback(null, true);
+
+        // In development, allow any localhost port
+        if (process.env.NODE_ENV !== 'production' && origin.includes('localhost')) {
+          return callback(null, true);
+        }
+
+        // In production, check against APP_URL
+        if (origin === process.env.APP_URL) {
+          return callback(null, true);
+        }
+
+        callback(new Error('Not allowed by CORS'));
+      },
       credentials: true,
     })
   );
