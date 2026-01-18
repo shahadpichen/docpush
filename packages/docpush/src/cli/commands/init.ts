@@ -40,6 +40,13 @@ const CONFIG_TEMPLATE = `module.exports = {
     emails: ['admin@example.com'] // TODO: Add your admin emails
   },
 
+  // Optional: Component paths (for npx docpush add)
+  components: {
+    uiPath: './src/components/ui',  // Where to install UI components
+    libPath: './src/lib',            // Where to install utilities
+    aliasPrefix: '@'                 // Import alias prefix (e.g., @/components)
+  },
+
   // Optional: Branding
   branding: {
     name: 'Documentation',

@@ -1,6 +1,6 @@
 {
   "name": "@shahadpichen/docpush",
-  "version": "1.0.2",
+  "version": "1.0.6",
   "publishConfig": {
     "access": "public"
   },
@@ -30,7 +30,8 @@
     "./react": {
       "types": "./dist/react/index.d.ts",
       "default": "./dist/react/index.js"
-    }
+    },
+    "./package.json": "./package.json"
   },
   "bin": {
     "docpush": "./dist/cli/index.js"

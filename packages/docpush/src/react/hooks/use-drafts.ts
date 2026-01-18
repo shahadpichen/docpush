@@ -18,6 +18,7 @@ export function useDrafts(status?: string) {
   const [drafts, setDrafts] = React.useState<Draft[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const fetchDrafts = React.useCallback(async () => {
     setLoading(true);
@@ -37,12 +38,23 @@ export function useDrafts(status?: string) {
   }, [fetchDrafts]);
 
   const createDraft = async (data: { docPath: string; title: string; content?: string }) => {
-    const res = await fetcher<{ draft: Draft }>('/api/drafts', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-    await fetchDrafts();
-    return res.draft;
+    // Prevent duplicate submissions
+    if (isSubmitting) {
+      console.warn('Draft submission already in progress');
+      return null;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const res = await fetcher<{ draft: Draft }>('/api/drafts', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+      await fetchDrafts();
+      return res.draft;
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const updateDraft = async (id: string, content: string, message?: string) => {
@@ -70,6 +82,7 @@ export function useDrafts(status?: string) {
     drafts,
     loading,
     error,
+    isSubmitting,
     createDraft,
     updateDraft,
     approveDraft,
