@@ -6,6 +6,13 @@ import { deleteSession, getSession } from '../storage';
 const router = express.Router();
 
 /**
+ * Get redirect URL after OAuth - uses FRONTEND_URL if set, otherwise APP_URL
+ */
+function getRedirectUrl(): string {
+  return process.env.FRONTEND_URL || process.env.APP_URL || '/';
+}
+
+/**
  * GET /api/auth/me
  * Get current user info
  */
@@ -61,7 +68,7 @@ router.get(
   '/github/callback',
   passport.authenticate('github', { failureRedirect: '/login?error=github' }),
   (req, res) => {
-    res.redirect('/');
+    res.redirect(getRedirectUrl());
   }
 );
 
@@ -79,7 +86,7 @@ router.get(
   '/google/callback',
   passport.authenticate('google', { failureRedirect: '/login?error=google' }),
   (req, res) => {
-    res.redirect('/');
+    res.redirect(getRedirectUrl());
   }
 );
 
