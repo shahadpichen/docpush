@@ -8,14 +8,8 @@ const publicAuthSchema = z.object({
 
 const domainRestrictedAuthSchema = z.object({
   mode: z.literal('domain-restricted'),
-  allowedDomains: z.array(z.string()).min(1, 'At least one domain required'),
-  emailFrom: z.string().email('Valid email required for sending magic links'),
-});
-
-const oauthAuthSchema = z.object({
-  mode: z.literal('oauth'),
   providers: z.array(z.enum(['github', 'google'])).min(1, 'At least one OAuth provider required'),
-  allowedDomains: z.array(z.string()).optional(),
+  allowedDomains: z.array(z.string()).min(1, 'At least one domain required'),
 });
 
 export const configSchema = z.object({
@@ -28,11 +22,7 @@ export const configSchema = z.object({
   }),
 
   // Authentication mode (discriminated union)
-  auth: z.discriminatedUnion('mode', [
-    publicAuthSchema,
-    domainRestrictedAuthSchema,
-    oauthAuthSchema,
-  ]),
+  auth: z.discriminatedUnion('mode', [publicAuthSchema, domainRestrictedAuthSchema]),
 
   // Admin users
   admins: z.object({
@@ -79,12 +69,7 @@ export function validateEnv(config?: DocsConfig): EnvValidationResult {
   if (config) {
     switch (config.auth.mode) {
       case 'domain-restricted':
-        if (!process.env.RESEND_API_KEY) {
-          result.missing.push('RESEND_API_KEY');
-        }
-        break;
-
-      case 'oauth':
+        // OAuth credentials required for domain-restricted
         if (config.auth.providers.includes('github')) {
           if (!process.env.GITHUB_CLIENT_ID) result.missing.push('GITHUB_CLIENT_ID');
           if (!process.env.GITHUB_CLIENT_SECRET) result.missing.push('GITHUB_CLIENT_SECRET');

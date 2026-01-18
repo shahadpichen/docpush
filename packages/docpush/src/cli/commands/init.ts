@@ -30,21 +30,29 @@ const CONFIG_TEMPLATE = `module.exports = {
   },
 
   // Authentication mode
+  // Option 1: Public mode - anyone can edit, admin password for approvals
   auth: {
-    mode: 'public',              // Options: 'public' | 'domain-restricted' | 'oauth'
-    adminPassword: 'changeme'    // TODO: Change this password! (for public mode)
+    mode: 'public',
+    adminPassword: 'changeme'    // TODO: Change this password!
   },
 
-  // Admin users (for domain-restricted and oauth modes)
+  // Option 2: Domain-restricted - OAuth login with email domain check
+  // auth: {
+  //   mode: 'domain-restricted',
+  //   providers: ['google'],       // Options: 'google', 'github'
+  //   allowedDomains: ['yourcompany.com']
+  // },
+
+  // Admin users (required for all modes)
   admins: {
     emails: ['admin@example.com'] // TODO: Add your admin emails
   },
 
   // Optional: Component paths (for npx docpush add)
   components: {
-    uiPath: './src/components/ui',  // Where to install UI components
-    libPath: './src/lib',            // Where to install utilities
-    aliasPrefix: '@'                 // Import alias prefix (e.g., @/components)
+    uiPath: './src/components/ui',
+    libPath: './src/lib',
+    aliasPrefix: '@'
   },
 
   // Optional: Branding
@@ -63,10 +71,9 @@ SESSION_SECRET=generate-random-string-here-change-in-production
 # Database (optional - uses SQLite if not provided)
 # DATABASE_PATH=./docpush.db
 
-# Auth - Domain Restricted (only if using this mode)
-# RESEND_API_KEY=re_your_key_here
-
-# Auth - OAuth (only if using this mode)
+# OAuth - Required for domain-restricted mode
+# GOOGLE_CLIENT_ID=your_client_id
+# GOOGLE_CLIENT_SECRET=your_client_secret
 # GITHUB_CLIENT_ID=your_client_id
 # GITHUB_CLIENT_SECRET=your_client_secret
 # GOOGLE_CLIENT_ID=your_client_id

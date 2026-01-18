@@ -5,7 +5,7 @@ Self-hosted, Git-backed collaborative documentation platform.
 ## Features
 
 - 📝 **Git-backed** - All docs stored in your GitHub repo
-- 🔐 **Flexible Auth** - Public, magic link, or OAuth
+- 🔐 **Flexible Auth** - Public or OAuth with domain restriction
 - ✏️ **Draft System** - Branch-based editing with approval workflow
 - 💬 **Comments** - Collaborative review process
 - ⚛️ **React Components** - Headless UI components for your app
@@ -70,25 +70,21 @@ auth: {
 
 ### Domain-Restricted Mode
 
-Only users with allowed email domains can edit.
+OAuth login (Google/GitHub) with email domain verification.
 
 ```javascript
 auth: {
   mode: 'domain-restricted',
-  allowedDomains: ['company.com'],
-  emailFrom: 'docs@company.com',
+  providers: ['google'], // or ['github']
+  allowedDomains: ['yourcompany.com'],
 }
 ```
 
-### OAuth Mode
+**Required env vars for domain-restricted:**
 
-GitHub/Google sign-in.
-
-```javascript
-auth: {
-  mode: 'oauth',
-  providers: ['github', 'google'],
-}
+```
+GOOGLE_CLIENT_ID=your_client_id
+GOOGLE_CLIENT_SECRET=your_client_secret
 ```
 
 ## React Components
@@ -103,7 +99,7 @@ import {
   MarkdownEditor,
   useDocs,
   useDrafts,
-} from "docpush/react";
+} from "@shahadpichen/docpush/react";
 
 function App() {
   return (
@@ -112,6 +108,15 @@ function App() {
     </DocPushProvider>
   );
 }
+```
+
+## Add Components (shadcn-style)
+
+Copy components to your project for customization:
+
+```bash
+npx @shahadpichen/docpush add button input textarea
+npx @shahadpichen/docpush add all
 ```
 
 ## API Endpoints

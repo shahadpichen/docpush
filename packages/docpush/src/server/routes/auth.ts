@@ -1,7 +1,6 @@
 import express from 'express';
 import passport from 'passport';
 import type { DocsConfig } from '../../core/config';
-import { sendMagicLink } from '../auth/magic-link';
 import { deleteSession, getSession } from '../storage';
 
 const router = express.Router();
@@ -45,42 +44,6 @@ router.post('/logout', (req, res) => {
       return res.status(500).json({ error: 'Logout failed' });
     }
     res.json({ success: true });
-  });
-});
-
-/**
- * POST /api/auth/magic-link
- * Send magic link email (domain-restricted mode)
- */
-router.post('/magic-link', async (req, res, next) => {
-  try {
-    const config = req.config as DocsConfig;
-    const { email } = req.body;
-
-    if (!email) {
-      return res.status(400).json({ error: 'Email required' });
-    }
-
-    if (config.auth.mode !== 'domain-restricted') {
-      return res.status(400).json({ error: 'Magic link not available in this mode' });
-    }
-
-    await sendMagicLink(email, config);
-    res.json({ success: true, message: 'Check your email for the login link' });
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    res.status(400).json({ error: message });
-  }
-});
-
-/**
- * POST /api/auth/verify
- * Verify magic link token
- */
-router.post('/verify', passport.authenticate('magic-link'), (req, res) => {
-  res.json({
-    success: true,
-    user: req.user,
   });
 });
 

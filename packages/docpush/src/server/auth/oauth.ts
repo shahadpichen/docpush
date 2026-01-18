@@ -16,10 +16,10 @@ interface OAuthUser {
  * OAuth authentication (GitHub, Google)
  */
 export function setupOAuth(config: DocsConfig) {
-  if (config.auth.mode !== 'oauth') return;
+  if (config.auth.mode !== 'domain-restricted') return;
 
-  // Get allowed domains from oauth config (optional)
-  const allowedDomains = config.auth.allowedDomains || [];
+  // Get allowed domains from config (required for domain-restricted)
+  const allowedDomains = config.auth.allowedDomains;
 
   // GitHub OAuth
   if (

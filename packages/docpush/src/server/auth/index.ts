@@ -1,6 +1,5 @@
 import passport from 'passport';
 import type { DocsConfig } from '../../core/config';
-import { setupMagicLinkAuth } from './magic-link';
 import { setupOAuth } from './oauth';
 import { setupPublicAuth } from './public';
 
@@ -40,14 +39,10 @@ export function setupAuth(config: DocsConfig) {
       setupPublicAuth(config);
       break;
     case 'domain-restricted':
-      setupMagicLinkAuth(config);
-      break;
-    case 'oauth':
       setupOAuth(config);
       break;
   }
 }
 
 export { setupPublicAuth } from './public';
-export { setupMagicLinkAuth, sendMagicLink } from './magic-link';
 export { setupOAuth } from './oauth';
