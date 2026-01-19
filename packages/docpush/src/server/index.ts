@@ -7,6 +7,7 @@ import { setupAuth } from './auth';
 import authRoutes from './routes/auth';
 import docsRoutes from './routes/docs';
 import draftsRoutes from './routes/drafts';
+import mediaRoutes from './routes/media';
 
 // Extend Express Request
 declare global {
@@ -85,6 +86,7 @@ export async function createServer(): Promise<express.Application> {
   app.use('/api/auth', authRoutes);
   app.use('/api/drafts', draftsRoutes);
   app.use('/api/docs', docsRoutes);
+  app.use('/api/media', mediaRoutes);
 
   // Health check
   app.get('/api/health', (req, res) => {

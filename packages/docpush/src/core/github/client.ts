@@ -188,4 +188,66 @@ export class GitHubClient {
       author: commit.commit.author?.name || 'Unknown',
     }));
   }
+
+  /**
+   * Upload media file (image, etc.) to repository
+   */
+  async uploadMedia(
+    filePath: string,
+    content: Buffer,
+    message: string,
+    branch?: string
+  ): Promise<string> {
+    const fullPath = `${this.config.docsPath}/${filePath}`;
+    const targetBranch = branch || this.config.branch;
+
+    // Try to get existing file SHA
+    let sha: string | undefined;
+    try {
+      const { data } = await this.octokit.repos.getContent({
+        owner: this.config.owner,
+        repo: this.config.repo,
+        path: fullPath,
+        ref: targetBranch,
+      });
+      if ('sha' in data) sha = data.sha;
+    } catch (e: unknown) {
+      const error = e as { status?: number };
+      if (error.status !== 404) throw e;
+      // File doesn't exist yet, that's ok
+    }
+
+    // Create or update file
+    await this.octokit.repos.createOrUpdateFileContents({
+      owner: this.config.owner,
+      repo: this.config.repo,
+      path: fullPath,
+      message,
+      content: content.toString('base64'),
+      branch: targetBranch,
+      sha,
+    });
+
+    return filePath;
+  }
+
+  /**
+   * Get media file content (raw binary)
+   */
+  async getMediaContent(filePath: string, ref?: string): Promise<Buffer> {
+    const fullPath = `${this.config.docsPath}/${filePath}`;
+
+    const { data } = await this.octokit.repos.getContent({
+      owner: this.config.owner,
+      repo: this.config.repo,
+      path: fullPath,
+      ref: ref || this.config.branch,
+    });
+
+    if ('content' in data) {
+      return Buffer.from(data.content, 'base64');
+    }
+
+    throw new Error('Path is not a file');
+  }
 }
