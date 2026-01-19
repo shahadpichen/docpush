@@ -14,78 +14,63 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 /**
  * POST /api/media
  * Upload an image file to the repository
+ * Body should be raw binary image data
  */
-router.post('/', requireEdit, async (req, res, next) => {
-  try {
-    const config = req.config as DocsConfig;
+router.post(
+  '/',
+  express.raw({ type: ['image/*'], limit: MAX_FILE_SIZE }),
+  requireEdit,
+  async (req, res, next) => {
+    try {
+      const config = req.config as DocsConfig;
+      const buffer = req.body as Buffer;
 
-    // Get file from request
-    const chunks: Buffer[] = [];
-    let totalSize = 0;
-
-    req.on('data', (chunk: Buffer) => {
-      totalSize += chunk.length;
-      if (totalSize > MAX_FILE_SIZE) {
-        res.status(413).json({ error: 'File too large (max 5MB)' });
-        return;
+      if (!buffer || buffer.length === 0) {
+        return res.status(400).json({ error: 'No image data received' });
       }
-      chunks.push(chunk);
-    });
 
-    req.on('end', async () => {
-      try {
-        const buffer = Buffer.concat(chunks);
+      // Get filename from header or generate one
+      const contentType = req.headers['content-type'] || 'image/png';
+      const originalName = req.headers['x-filename'] as string;
 
-        // Get filename from header or generate one
-        const contentType = req.headers['content-type'] || 'image/png';
-        const originalName = req.headers['x-filename'] as string;
-
-        let ext = '.png';
-        if (originalName) {
-          ext = path.extname(originalName).toLowerCase();
-        } else if (contentType.includes('jpeg') || contentType.includes('jpg')) {
-          ext = '.jpg';
-        } else if (contentType.includes('gif')) {
-          ext = '.gif';
-        } else if (contentType.includes('webp')) {
-          ext = '.webp';
-        } else if (contentType.includes('svg')) {
-          ext = '.svg';
-        }
-
-        // Validate extension
-        if (!ALLOWED_EXTENSIONS.includes(ext)) {
-          res.status(400).json({ error: `File type ${ext} not allowed` });
-          return;
-        }
-
-        // Generate unique filename
-        const filename = `${randomUUID().slice(0, 8)}${ext}`;
-        const filePath = `assets/${filename}`;
-
-        // Upload to GitHub
-        const github = new GitHubClient(process.env.GITHUB_TOKEN || '', config.github);
-        await github.uploadMedia(filePath, buffer, `Upload image: ${filename}`);
-
-        // Return the URL to access the image
-        res.status(201).json({
-          success: true,
-          path: filePath,
-          url: `/api/media/${filePath}`,
-          markdown: `![${originalName || filename}](./assets/${filename})`,
-        });
-      } catch (error) {
-        next(error);
+      let ext = '.png';
+      if (originalName) {
+        ext = path.extname(originalName).toLowerCase();
+      } else if (contentType.includes('jpeg') || contentType.includes('jpg')) {
+        ext = '.jpg';
+      } else if (contentType.includes('gif')) {
+        ext = '.gif';
+      } else if (contentType.includes('webp')) {
+        ext = '.webp';
+      } else if (contentType.includes('svg')) {
+        ext = '.svg';
       }
-    });
 
-    req.on('error', (error) => {
+      // Validate extension
+      if (!ALLOWED_EXTENSIONS.includes(ext)) {
+        return res.status(400).json({ error: `File type ${ext} not allowed` });
+      }
+
+      // Generate unique filename
+      const filename = `${randomUUID().slice(0, 8)}${ext}`;
+      const filePath = `assets/${filename}`;
+
+      // Upload to GitHub
+      const github = new GitHubClient(process.env.GITHUB_TOKEN || '', config.github);
+      await github.uploadMedia(filePath, buffer, `Upload image: ${filename}`);
+
+      // Return the URL to access the image
+      res.status(201).json({
+        success: true,
+        path: filePath,
+        url: `/api/media/${filePath}`,
+        markdown: `![${originalName || filename}](./assets/${filename})`,
+      });
+    } catch (error) {
       next(error);
-    });
-  } catch (error) {
-    next(error);
+    }
   }
-});
+);
 
 /**
  * GET /api/media/:path*
