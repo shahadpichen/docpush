@@ -13,6 +13,7 @@ export class GitHubClient {
 
   /**
    * Get documentation file tree
+   * Returns only .md files and their parent directories (excludes assets folders)
    */
   async getDocsTree(): Promise<Array<{ path: string; type: 'file' | 'dir' }>> {
     return retryWithBackoff(async () => {
@@ -23,7 +24,7 @@ export class GitHubClient {
         recursive: '1',
       });
 
-      return data.tree
+      const items = data.tree
         .filter(
           (item): item is typeof item & { path: string } =>
             typeof item.path === 'string' && item.path.startsWith(this.config.docsPath)
@@ -32,6 +33,28 @@ export class GitHubClient {
           path: item.path.replace(`${this.config.docsPath}/`, ''),
           type: item.type === 'tree' ? ('dir' as const) : ('file' as const),
         }));
+
+      // Filter to only include:
+      // 1. .md files
+      // 2. Directories that contain .md files (not assets or other folders)
+      const mdFiles = items.filter((item) => item.type === 'file' && item.path.endsWith('.md'));
+
+      // Get unique directories that contain .md files
+      const dirsWithMd = new Set<string>();
+      mdFiles.forEach((file) => {
+        const parts = file.path.split('/');
+        // Add all parent directories
+        for (let i = 1; i < parts.length; i++) {
+          dirsWithMd.add(parts.slice(0, i).join('/'));
+        }
+      });
+
+      // Include only .md files and their parent directories
+      return items.filter(
+        (item) =>
+          (item.type === 'file' && item.path.endsWith('.md')) ||
+          (item.type === 'dir' && dirsWithMd.has(item.path))
+      );
     });
   }
 
