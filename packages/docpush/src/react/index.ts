@@ -19,6 +19,7 @@ export { useDocs } from './hooks/use-docs';
 export { useDrafts } from './hooks/use-drafts';
 export { useComments } from './hooks/use-comments';
 export { useAuth } from './hooks/use-auth';
+export { useMedia } from './hooks/use-media';
 
 // Context
 export { DocPushProvider, useDocPush } from './context/docpush-provider';

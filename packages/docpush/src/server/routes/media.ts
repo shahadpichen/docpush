@@ -14,19 +14,30 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 /**
  * POST /api/media
  * Upload an image file to the repository
- * Body should be raw binary image data
+ * Body should be raw binary image data (Content-Type: image/*)
  */
 router.post(
   '/',
-  express.raw({ type: ['image/*'], limit: MAX_FILE_SIZE }),
+  express.raw({ type: '*/*', limit: MAX_FILE_SIZE }),
   requireEdit,
   async (req, res, next) => {
     try {
       const config = req.config as DocsConfig;
-      const buffer = req.body as Buffer;
 
-      if (!buffer || buffer.length === 0) {
-        return res.status(400).json({ error: 'No image data received' });
+      // Ensure we have a Buffer
+      let buffer: Buffer;
+      if (Buffer.isBuffer(req.body)) {
+        buffer = req.body;
+      } else if (typeof req.body === 'string') {
+        buffer = Buffer.from(req.body, 'binary');
+      } else {
+        return res.status(400).json({
+          error: 'No image data received. Send raw binary data with Content-Type: image/*',
+        });
+      }
+
+      if (buffer.length === 0) {
+        return res.status(400).json({ error: 'Empty image data' });
       }
 
       // Get filename from header or generate one

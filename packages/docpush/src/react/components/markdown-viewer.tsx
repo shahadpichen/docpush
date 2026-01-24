@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { cn } from '../lib/utils';
+import { useDocPush } from '../context/docpush-provider';
 
 interface MarkdownViewerProps {
   content: string;
@@ -9,15 +10,22 @@ interface MarkdownViewerProps {
 }
 
 export function MarkdownViewer({ content, className }: MarkdownViewerProps) {
+  const { apiUrl } = useDocPush();
+
   // Basic markdown rendering - users can override with react-markdown
   const html = React.useMemo(() => {
     return (
       content
         // Images: ![alt](url)
-        .replace(
-          /!\[([^\]]*)\]\(([^)]+)\)/gim,
-          '<img src="$2" alt="$1" class="max-w-full h-auto rounded-lg my-4" />'
-        )
+        .replace(/!\[([^\]]*)\]\(([^)]+)\)/gim, (match, alt, url) => {
+          // Convert relative asset paths to API URLs
+          let imageSrc = url;
+          if (url.startsWith('./assets/') || url.startsWith('assets/')) {
+            const assetPath = url.replace(/^\.\//, '');
+            imageSrc = `${apiUrl}/api/media/${assetPath}`;
+          }
+          return `<img src="${imageSrc}" alt="${alt}" class="max-w-full h-auto rounded-lg my-4" />`;
+        })
         // Links: [text](url)
         .replace(/\[([^\]]+)\]\(([^)]+)\)/gim, '<a href="$2" class="text-primary underline">$1</a>')
         .replace(/^### (.*$)/gim, '<h3 class="text-lg font-semibold mt-6 mb-2">$1</h3>')

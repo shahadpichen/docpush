@@ -51,9 +51,6 @@ export async function createServer(): Promise<express.Application> {
     })
   );
 
-  app.use(express.json({ limit: '10mb' }));
-  app.use(express.urlencoded({ extended: true }));
-
   // Session
   app.use(
     session({
@@ -82,11 +79,18 @@ export async function createServer(): Promise<express.Application> {
     next();
   });
 
+  // Media routes - Mount BEFORE global body parsers to ensure raw binary handling
+  app.use('/api/media', mediaRoutes);
+
+  // Global body parsing
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ extended: true }));
+
   // Routes
   app.use('/api/auth', authRoutes);
   app.use('/api/drafts', draftsRoutes);
   app.use('/api/docs', docsRoutes);
-  app.use('/api/media', mediaRoutes);
+  // app.use('/api/media', mediaRoutes); // Mounted above
 
   // Health check
   app.get('/api/health', (req, res) => {
