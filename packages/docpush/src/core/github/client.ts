@@ -13,6 +13,7 @@ export class GitHubClient {
 
   /**
    * Get documentation file tree
+   * Returns only .md files and their parent directories (excludes assets folders)
    */
   async getDocsTree(): Promise<Array<{ path: string; type: 'file' | 'dir' }>> {
     return retryWithBackoff(async () => {
@@ -23,7 +24,7 @@ export class GitHubClient {
         recursive: '1',
       });
 
-      return data.tree
+      const items = data.tree
         .filter(
           (item): item is typeof item & { path: string } =>
             typeof item.path === 'string' && item.path.startsWith(this.config.docsPath)
@@ -32,6 +33,28 @@ export class GitHubClient {
           path: item.path.replace(`${this.config.docsPath}/`, ''),
           type: item.type === 'tree' ? ('dir' as const) : ('file' as const),
         }));
+
+      // Filter to only include:
+      // 1. .md files
+      // 2. Directories that contain .md files (not assets or other folders)
+      const mdFiles = items.filter((item) => item.type === 'file' && item.path.endsWith('.md'));
+
+      // Get unique directories that contain .md files
+      const dirsWithMd = new Set<string>();
+      mdFiles.forEach((file) => {
+        const parts = file.path.split('/');
+        // Add all parent directories
+        for (let i = 1; i < parts.length; i++) {
+          dirsWithMd.add(parts.slice(0, i).join('/'));
+        }
+      });
+
+      // Include only .md files and their parent directories
+      return items.filter(
+        (item) =>
+          (item.type === 'file' && item.path.endsWith('.md')) ||
+          (item.type === 'dir' && dirsWithMd.has(item.path))
+      );
     });
   }
 
@@ -187,5 +210,67 @@ export class GitHubClient {
       date: commit.commit.author?.date || '',
       author: commit.commit.author?.name || 'Unknown',
     }));
+  }
+
+  /**
+   * Upload media file (image, etc.) to repository
+   */
+  async uploadMedia(
+    filePath: string,
+    content: Buffer,
+    message: string,
+    branch?: string
+  ): Promise<string> {
+    const fullPath = `${this.config.docsPath}/${filePath}`;
+    const targetBranch = branch || this.config.branch;
+
+    // Try to get existing file SHA
+    let sha: string | undefined;
+    try {
+      const { data } = await this.octokit.repos.getContent({
+        owner: this.config.owner,
+        repo: this.config.repo,
+        path: fullPath,
+        ref: targetBranch,
+      });
+      if ('sha' in data) sha = data.sha;
+    } catch (e: unknown) {
+      const error = e as { status?: number };
+      if (error.status !== 404) throw e;
+      // File doesn't exist yet, that's ok
+    }
+
+    // Create or update file
+    await this.octokit.repos.createOrUpdateFileContents({
+      owner: this.config.owner,
+      repo: this.config.repo,
+      path: fullPath,
+      message,
+      content: content.toString('base64'),
+      branch: targetBranch,
+      sha,
+    });
+
+    return filePath;
+  }
+
+  /**
+   * Get media file content (raw binary)
+   */
+  async getMediaContent(filePath: string, ref?: string): Promise<Buffer> {
+    const fullPath = `${this.config.docsPath}/${filePath}`;
+
+    const { data } = await this.octokit.repos.getContent({
+      owner: this.config.owner,
+      repo: this.config.repo,
+      path: fullPath,
+      ref: ref || this.config.branch,
+    });
+
+    if ('content' in data) {
+      return Buffer.from(data.content, 'base64');
+    }
+
+    throw new Error('Path is not a file');
   }
 }

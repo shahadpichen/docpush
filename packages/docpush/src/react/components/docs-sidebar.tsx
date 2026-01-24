@@ -15,69 +15,160 @@ interface DocsSidebarProps {
   activePath?: string;
   onSelect?: (path: string) => void;
   className?: string;
+  icons?: {
+    file?: React.ComponentType<{ className?: string }>;
+    folder?: React.ComponentType<{ className?: string }>;
+    chevron?: React.ComponentType<{ className?: string }>;
+  };
 }
 
-export function DocsSidebar({ tree, activePath, onSelect, className }: DocsSidebarProps) {
-  // Group by directory
-  const grouped = React.useMemo(() => {
-    return tree.reduce(
-      (acc, item) => {
-        const parts = item.path.split('/');
-        const dir = parts.length > 1 ? parts[0] : '';
-        if (!acc[dir]) acc[dir] = [];
-        acc[dir].push(item);
-        return acc;
-      },
-      {} as Record<string, DocTreeItem[]>
-    );
+interface TreeNode {
+  name: string;
+  path: string;
+  type: 'file' | 'dir';
+  children: TreeNode[];
+}
+
+export function DocsSidebar({ tree, activePath, onSelect, className, icons }: DocsSidebarProps) {
+  // Build nested tree structure
+  const treeStructure = React.useMemo(() => {
+    const root: TreeNode[] = [];
+
+    tree.forEach((item) => {
+      const parts = item.path.split('/');
+      let currentLevel = root;
+
+      parts.forEach((part, index) => {
+        const isLast = index === parts.length - 1;
+        const fullPath = parts.slice(0, index + 1).join('/');
+
+        let existingNode = currentLevel.find((node) => node.name === part);
+
+        if (!existingNode) {
+          existingNode = {
+            name: part,
+            path: fullPath,
+            type: isLast ? item.type : 'dir',
+            children: [],
+          };
+          currentLevel.push(existingNode);
+        }
+
+        if (!isLast) {
+          currentLevel = existingNode.children;
+        }
+      });
+    });
+
+    return root;
   }, [tree]);
+
+  const iconComponents = {
+    file: icons?.file || FileIcon,
+    folder: icons?.folder || FolderIcon,
+    chevron: icons?.chevron || ChevronIcon,
+  };
 
   return (
     <ScrollArea className={cn('h-full w-64 border-r', className)}>
-      <div className="space-y-4 py-4">
-        {Object.entries(grouped).map(([dir, items]) => (
-          <div key={dir || 'root'} className="px-3 py-2">
-            {dir && (
-              <h4 className="mb-2 flex items-center gap-2 px-2 text-sm font-semibold tracking-tight">
-                <FolderIcon className="h-4 w-4" />
-                {dir}
-              </h4>
-            )}
-            <div className="space-y-1">
-              {items
-                .filter((item) => item.type === 'file')
-                .map((item) => {
-                  const isActive = item.path === activePath;
-                  const fileName = item.path.split('/').pop()?.replace('.md', '') || item.path;
-
-                  return (
-                    <Button
-                      key={item.path}
-                      variant={isActive ? 'secondary' : 'ghost'}
-                      size="sm"
-                      className={cn(
-                        'w-full justify-start gap-2',
-                        isActive && 'bg-muted font-medium'
-                      )}
-                      onClick={() => onSelect?.(item.path)}
-                    >
-                      <FileIcon className="h-4 w-4" />
-                      {fileName}
-                    </Button>
-                  );
-                })}
-            </div>
-          </div>
+      <div className="space-y-1 py-4 px-3">
+        {treeStructure.map((node) => (
+          <TreeNodeComponent
+            key={node.path}
+            node={node}
+            activePath={activePath}
+            onSelect={onSelect}
+            level={0}
+            icons={iconComponents}
+          />
         ))}
       </div>
     </ScrollArea>
   );
 }
 
+interface TreeNodeComponentProps {
+  node: TreeNode;
+  activePath?: string;
+  onSelect?: (path: string) => void;
+  level: number;
+  icons: {
+    file: React.ComponentType<{ className?: string }>;
+    folder: React.ComponentType<{ className?: string }>;
+    chevron: React.ComponentType<{ className?: string }>;
+  };
+}
+
+function TreeNodeComponent({ node, activePath, onSelect, level, icons }: TreeNodeComponentProps) {
+  const [isExpanded, setIsExpanded] = React.useState(true);
+  const FileIconComponent = icons.file;
+  const FolderIconComponent = icons.folder;
+  const ChevronIconComponent = icons.chevron;
+
+  if (node.type === 'file') {
+    const isActive = node.path === activePath;
+    const fileName = node.name.replace('.md', '');
+
+    return (
+      <Button
+        variant={isActive ? 'secondary' : 'ghost'}
+        size="sm"
+        className={cn(
+          'w-full justify-start gap-2',
+          isActive && 'bg-muted font-medium'
+        )}
+        style={{ paddingLeft: `${level * 12 + 12}px` }}
+        onClick={() => onSelect?.(node.path)}
+      >
+        <FileIconComponent className="h-4 w-4 shrink-0" />
+        <span className="truncate">{fileName}</span>
+      </Button>
+    );
+  }
+
+  // Directory node
+  return (
+    <div>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="w-full justify-start gap-2 font-semibold"
+        style={{ paddingLeft: `${level * 12 + 12}px` }}
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <ChevronIconComponent className={cn('h-4 w-4 shrink-0 transition-transform', isExpanded && 'rotate-90')} />
+        <FolderIconComponent className="h-4 w-4 shrink-0" />
+        <span className="truncate">{node.name}</span>
+      </Button>
+      {isExpanded && (
+        <div className="space-y-1">
+          {node.children.map((child) => (
+            <TreeNodeComponent
+              key={child.path}
+              node={child}
+              activePath={activePath}
+              onSelect={onSelect}
+              level={level + 1}
+              icons={icons}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Simple icons to avoid lucide-react dependency in core
 function FolderIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg
+      className={className}
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -90,13 +181,35 @@ function FolderIcon({ className }: { className?: string }) {
 
 function FileIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg
+      className={className}
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth={2}
         d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
       />
+    </svg>
+  );
+}
+
+function ChevronIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
     </svg>
   );
 }
